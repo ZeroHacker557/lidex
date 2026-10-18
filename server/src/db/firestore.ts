@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { isAbsolute, resolve } from 'node:path';
 import { cert, getApps, initializeApp, applicationDefault, type App } from 'firebase-admin/app';
 import {
   AggregateField,
@@ -12,6 +13,7 @@ import {
   type Transaction,
 } from 'firebase-admin/firestore';
 import { config } from '../config.js';
+import { ROOT_DIR } from '../paths.js';
 import type { AggregateResult, AggregateSpec, Query, Store, Tx, WithId } from './store.js';
 import { isIncrement } from './store.js';
 
@@ -46,7 +48,8 @@ function loadCredentials(): App {
     const json = raw.trim().startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8');
     credential = cert(JSON.parse(json));
   } else if (path) {
-    credential = cert(JSON.parse(readFileSync(path, 'utf8')));
+    // Nisbiy yo'l loyiha ildiziga nisbatan (.env shu yerda)
+    credential = cert(JSON.parse(readFileSync(isAbsolute(path) ? path : resolve(ROOT_DIR, path), 'utf8')));
   } else {
     // GOOGLE_APPLICATION_CREDENTIALS yoki Cloud Run / GCE muhitidagi standart hisob
     credential = applicationDefault();

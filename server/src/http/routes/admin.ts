@@ -572,8 +572,8 @@ const adminBody = z.object({
     .string()
     .trim()
     .min(3)
-    .max(32)
-    .regex(/^[a-zA-Z0-9_.-]+$/, 'Faqat lotin harflari, raqam va _ . -'),
+    .max(64)
+    .regex(/^[a-zA-Z0-9_.@-]+$/, 'Faqat lotin harflari, raqam va _ . - @'),
   fullName: z.string().trim().min(2).max(80),
   password: z.string().min(8).max(128),
   role: z.enum(['superadmin', 'admin']).default('admin'),

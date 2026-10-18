@@ -4,10 +4,11 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import helmet from 'helmet';
 import { webhookCallback } from 'grammy';
-import { config, isProd } from '../config.js';
+import { config, isProd, isServerless } from '../config.js';
 import { db } from '../db/index.js';
 import { bot } from '../bot/instance.js';
-import { notFound } from '../lib/errors.js';
+import { notFound, unauthorized } from '../lib/errors.js';
+import { runTick } from '../scheduler/index.js';
 import { WEB_DIST_DIR } from '../paths.js';
 import { errorHandler } from './middleware.js';
 import { adminRouter } from './routes/admin.js';
@@ -27,12 +28,25 @@ export function createApp(): Express {
   app.use(express.json({ limit: '256kb' }));
 
   app.get('/api/health', (_req, res) => {
-    res.json({ ok: true, db: db().kind, bot: !!bot, time: new Date().toISOString() });
+    res.json({ ok: true, db: db().kind, bot: !!bot, realtime: !isServerless, time: new Date().toISOString() });
   });
 
   if (bot && config.BOT_MODE === 'webhook') {
-    app.post('/api/telegram/webhook', webhookCallback(bot, 'express', { secretToken: config.WEBHOOK_SECRET }));
+    app.post(
+      '/api/telegram/webhook',
+      webhookCallback(bot, 'express', { secretToken: config.WEBHOOK_SECRET, onTimeout: 'return', timeoutMilliseconds: 25_000 }),
+    );
   }
+
+  // Fon vazifalari (eslatma, SLA, dayjest) — Vercel Cron yoki tashqi cron har daqiqada chaqiradi
+  app.all('/api/cron/tick', async (req, res) => {
+    const auth = req.headers.authorization;
+    const key = typeof req.query.key === 'string' ? req.query.key : null;
+    if (!config.CRON_SECRET || (auth !== `Bearer ${config.CRON_SECRET}` && key !== config.CRON_SECRET)) {
+      throw unauthorized("Cron kaliti noto'g'ri");
+    }
+    res.json({ ok: true, ...(await runTick()) });
+  });
 
   app.use('/api/admin/auth', adminAuthRouter);
   app.use('/api/admin', adminRouter);

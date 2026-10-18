@@ -2,7 +2,7 @@ import { GrammyError, HttpError as GrammyHttpError, type Context } from 'grammy'
 import type { Message } from 'grammy/types';
 import { STATUS_META } from '../../../shared/statuses.js';
 import { config, webAppAvailable, webAppUrl } from '../config.js';
-import { COL, db, type Admin, type Lead, type StaffMessage } from '../db/index.js';
+import { COL, db, type Admin, type StaffMessage } from '../db/index.js';
 import { looksLikeAccessKey } from '../lib/security.js';
 import { startOfLocalDay } from '../lib/time.js';
 import { logger } from '../logger.js';
@@ -285,4 +285,31 @@ export async function stopBot() {
   if (bot && config.BOT_MODE === 'polling' && bot.isRunning()) await bot.stop();
 }
 
-export type { Lead };
+/**
+ * Serverless (Vercel) uchun: handlerlar + bot ma'lumoti; webhook manzili mos kelmasa — qayta o'rnatiladi.
+ * Har bir sovuq ishga tushishda bir marta chaqiriladi.
+ */
+export async function initBotServerless(): Promise<void> {
+  if (!bot) return;
+  setupBot();
+  await bot.init();
+  botInfo.set(bot.botInfo.username);
+  const url = `${config.PUBLIC_URL}/api/telegram/webhook`;
+  const info = await bot.api.getWebhookInfo();
+  if (info.url === url) return;
+  await bot.api.setWebhook(url, { secret_token: config.WEBHOOK_SECRET, allowed_updates: [...ALLOWED_UPDATES] });
+  await bot.api
+    .setMyCommands([
+      { command: 'start', description: 'Boshlash / kalit bilan kirish' },
+      { command: 'panel', description: 'Lidlar paneli' },
+      { command: 'stats', description: 'Bugungi natijalar' },
+      { command: 'help', description: "Qo'llanma" },
+    ])
+    .catch(() => undefined);
+  if (webAppAvailable) {
+    await bot.api
+      .setChatMenuButton({ menu_button: { type: 'web_app', text: 'Panel', web_app: { url: `${webAppUrl}/` } } })
+      .catch(() => undefined);
+  }
+  logger.info({ url }, "Telegram webhook o'rnatildi");
+}

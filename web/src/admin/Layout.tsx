@@ -191,7 +191,7 @@ export function Layout({ children }: { children: ReactNode }) {
               {live && <span className="absolute inset-0 animate-pulse-ring rounded-full bg-emerald-500" />}
               <span className={clsx('relative h-2 w-2 rounded-full', live ? 'bg-emerald-500' : 'bg-slate-400')} />
             </span>
-            {live ? 'Real vaqtda' : 'Ulanmoqda…'}
+            {live ? 'Real vaqtda' : 'Avto-yangilanish'}
           </span>
           <motion.button
             whileTap={{ scale: 0.96 }}

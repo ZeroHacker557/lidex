@@ -9,3 +9,7 @@ server/data/
 firebase-service-account*.json
 *-service-account*.json
 .DS_Store
+
+# Firebase service account (har qanday nom bilan)
+*firebase-adminsdk*.json
+.vercel

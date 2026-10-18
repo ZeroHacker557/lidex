@@ -86,7 +86,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   const e = err as { code?: number; message?: string };
   // Firestore: kompozit indeks yo'q bo'lsa — havolani logga chiqaramiz
   if (e?.code === 9 && e.message?.includes('index')) {
-    logger.error({ msg: e.message }, 'Firestore indeksi kerak (firestore.indexes.json ni deploy qiling)');
+    logger.error({ detail: e.message }, 'Firestore indeksi kerak (npm run firestore:indexes)');
   } else {
     logger.error({ err, path: req.path }, 'Kutilmagan xato');
   }

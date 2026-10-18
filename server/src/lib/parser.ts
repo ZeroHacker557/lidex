@@ -28,7 +28,23 @@ const PHONE_KEYS = [
 const TELEGRAM_KEYS = ['telegram', 'username', 'tg', 'телеграм'];
 
 // "Kalit: qiymat" yoki "Kalit — qiymat"
-const FIELD_LINE = /^[^\p{L}\p{N}]*([\p{L}][\p{L}\p{N} .'ʻ’‘`_/()-]{0,40}?)\s*(?::|：|\s[—–-]\s|—)\s*(.+)$/u;
+const FIELD_LINE = /^[^\p{L}\p{N}]*([\p{L}][\p{L}\p{N} .'ʻ’‘`_/()?!-]{0,60}?)\s*(?::|：|\s[—–-]\s|—)\s*(.+)$/u;
+// Ro'yxat raqami: "1. Kalit: qiymat", "2) Kalit: qiymat"
+const LEADING_EMOJI = /^[\p{Extended_Pictographic}️‍\s]+/u;
+const LIST_PREFIX = /^[^\p{L}\p{N}]*\d{1,2}[.)]\s+/u;
+
+/** Forma savollarini qisqa nomga keltirish */
+const KEY_RENAME: Array<[RegExp, string]> = [
+  [/viloyat|region|область|вилоят/i, 'Viloyat'],
+  [/^(shahar|city|город)/i, 'Shahar'],
+  [/^nomi$|^forma|^form name/i, 'Forma'],
+];
+
+function displayKey(rawKey: string): string {
+  const clean = rawKey.replace(/[?!:]+$/g, '').replace(/\s+/g, ' ').trim();
+  for (const [re, name] of KEY_RENAME) if (re.test(clean)) return name;
+  return clean.slice(0, 60);
+}
 
 function normalizeKey(key: string): string {
   return key
@@ -51,7 +67,9 @@ export function parseLeadText(text: string): ParsedLead {
   const result: ParsedLead = { name: null, phone: null, phones: [], telegramUsername: null, fields: [] };
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
 
-  for (const line of lines) {
+  for (const rawLine of lines) {
+    // Boshidagi emoji (ℹ️ kabi harfga o'xshash belgilar ham) va ro'yxat raqamini olib tashlash
+    const line = rawLine.replace(LEADING_EMOJI, '').replace(LIST_PREFIX, '');
     const m = FIELD_LINE.exec(line);
     if (!m) continue;
     const rawKey = m[1]!.trim();
@@ -75,7 +93,7 @@ export function parseLeadText(text: string): ParsedLead {
         continue;
       }
     }
-    result.fields.push({ key: rawKey.replace(/\s+/g, ' ').slice(0, 60), value: value.slice(0, 500) });
+    result.fields.push({ key: displayKey(rawKey), value: value.slice(0, 500) });
   }
 
   result.phones = extractPhones(text);

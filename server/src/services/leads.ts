@@ -182,14 +182,15 @@ export async function ingestLead(input: IngestInput): Promise<IngestResult | nul
   emitToAdmins(lead.groupId, 'lead:new', dto);
   if (assignee) {
     emitToEmployee(assignee.id, 'lead:new', dto);
-    notifyNewLead(assignee, lead).catch((err) => logger.error({ err }, 'notifyNewLead'));
+    // Kutib yuboriladi: serverless (Vercel) da javobdan keyin jarayon to'xtatiladi
+    await notifyNewLead(assignee, lead).catch((err) => logger.error({ err }, 'notifyNewLead'));
   } else {
     emitToAdmins(lead.groupId, 'alert', {
       kind: 'unassigned',
       leadId: lead.id,
       text: `Lid #${lead.seq} hech kimga biriktirilmadi — faol xodim yo'q`,
     });
-    notifyAdmins(
+    await notifyAdmins(
       lead.groupId,
       `⚠️ <b>Lid #${lead.seq}</b> (${group.title}) hech kimga biriktirilmadi.\nGuruhda faol, botga ulangan xodim yo'q yoki taqsimlash "qo'lda".`,
     ).catch(() => undefined);
@@ -330,7 +331,7 @@ export async function reassignLead(leadId: string, employeeId: string | null, ac
   if (lead.assignedEmployeeId) emitToEmployee(lead.assignedEmployeeId, 'lead:removed', { id: lead.id });
   if (emp) {
     emitToEmployee(emp.id, 'lead:new', dto);
-    notifyReassigned(emp, updated).catch(() => undefined);
+    await notifyReassigned(emp, updated).catch(() => undefined);
   }
   emitToAdmins(updated.groupId, 'lead:updated', dto);
   return updated;

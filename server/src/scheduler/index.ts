@@ -185,13 +185,20 @@ export async function processDigest(now = new Date()) {
   );
 }
 
+/** Bitta tsikl: eslatmalar, SLA, dayjest. Serverless'da /api/cron/tick orqali chaqiriladi */
+export async function runTick() {
+  const startedAt = Date.now();
+  const reminders = await processReminders();
+  await processSla();
+  await processDigest();
+  return { reminders, ms: Date.now() - startedAt };
+}
+
 async function tick() {
   if (running) return;
   running = true;
   try {
-    await processReminders();
-    await processSla();
-    await processDigest();
+    await runTick();
   } catch (err) {
     logger.error({ err }, 'Scheduler xatosi');
   } finally {

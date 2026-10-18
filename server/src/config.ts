@@ -20,7 +20,10 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(4000),
   /** Tashqi HTTPS manzil (Mini App va webhook uchun), masalan https://lidex.example.uz */
-  PUBLIC_URL: z.string().default('http://localhost:4000').transform((v) => v.replace(/\/+$/, '')),
+  PUBLIC_URL: z
+    .string()
+    .default(process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : 'http://localhost:4000')
+    .transform((v) => v.replace(/\/+$/, '')),
   JWT_SECRET: z.string().min(16).default('dev-only-secret-change-me-0123456789abcdef'),
   ADMIN_USERNAME: z.string().default('admin'),
   ADMIN_PASSWORD: optional,
@@ -39,6 +42,8 @@ const schema = z.object({
   BOT_TOKEN: optional,
   BOT_MODE: z.enum(['polling', 'webhook']).default('polling'),
   WEBHOOK_SECRET: optional,
+  /** Tashqi cron (Vercel Cron / cron-job.org) /api/cron/tick ni chaqirish uchun maxfiy kalit */
+  CRON_SECRET: optional,
 
   // Userbot (MTProto) — boshqa botlar guruhga yozgan lidlarni o'qish uchun
   USERBOT_ENABLED: bool(false),
@@ -58,11 +63,17 @@ const schema = z.object({
   LOG_LEVEL: z.string().default('info'),
 });
 
-const parsed = schema.safeParse(process.env);
-if (!parsed.success) {
-  console.error('❌ .env sozlamalarida xato:', parsed.error.flatten().fieldErrors);
+/** Vercel kabi serverless muhit: doimiy jarayon yo'q (Socket.IO, polling, setInterval ishlamaydi) */
+export const isServerless = !!process.env.VERCEL;
+
+function fail(message: string): never {
+  console.error(`❌ ${message}`);
+  if (isServerless) throw new Error(message);
   process.exit(1);
 }
+
+const parsed = schema.safeParse(process.env);
+if (!parsed.success) fail(`.env sozlamalarida xato: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`);
 
 export const config = parsed.data;
 export const isProd = config.NODE_ENV === 'production';
@@ -71,12 +82,6 @@ export const webAppUrl = `${config.PUBLIC_URL}/app`;
 export const webAppAvailable = config.PUBLIC_URL.startsWith('https://');
 
 if (isProd) {
-  if (config.JWT_SECRET.startsWith('dev-only')) {
-    console.error('❌ Production rejimida JWT_SECRET o\'rnatilishi shart');
-    process.exit(1);
-  }
-  if (config.DEV_AUTH) {
-    console.error('❌ DEV_AUTH production rejimida yoqilmasligi kerak');
-    process.exit(1);
-  }
+  if (config.JWT_SECRET.startsWith('dev-only')) fail("Production rejimida JWT_SECRET o'rnatilishi shart");
+  if (config.DEV_AUTH) fail('DEV_AUTH production rejimida yoqilmasligi kerak');
 }
