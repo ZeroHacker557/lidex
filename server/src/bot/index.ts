@@ -1,3 +1,4 @@
+import { hostname } from 'node:os';
 import { GrammyError, HttpError as GrammyHttpError, type Context } from 'grammy';
 import type { Message } from 'grammy/types';
 import { STATUS_META } from '../../../shared/statuses.js';
@@ -242,74 +243,123 @@ function leadKeyboardForAck(leadId: string) {
 
 const ALLOWED_UPDATES = ['message', 'edited_message', 'channel_post', 'callback_query', 'my_chat_member'] as const;
 
+// ---------- Kompyuter (polling) va Vercel (webhook) o'rtasida kelishuv ----------
+// Bitta bot tokeni bilan bir vaqtda faqat bitta usul ishlay oladi. Lokal polling har 30 soniyada
+// Firestore'ga "tirikman" belgisini yozadi; Vercel bu belgi yangi bo'lsa webhookni o'rnatmaydi.
+// Kompyuter o'chsa, belgi eskiradi va Vercel ~1 daqiqada webhookni qayta tiklaydi.
+const RUNTIME_DOC = 'botRuntime';
+const HEARTBEAT_MS = 30_000;
+const STALE_MS = 90_000;
+let heartbeat: NodeJS.Timeout | null = null;
+
+async function writeHeartbeat(mode: 'polling' | 'stopped') {
+  await db()
+    .set(COL.counters, RUNTIME_DOC, { mode, host: hostname(), heartbeatAt: new Date() })
+    .catch((err) => logger.warn({ err: err.message }, 'Bot heartbeat yozilmadi'));
+}
+
+/** Kompyuterdagi (polling) bot hozir ishlayaptimi */
+export async function localPollingActive(): Promise<boolean> {
+  const rt = await db().get<{ mode: string; heartbeatAt: Date }>(COL.counters, RUNTIME_DOC);
+  return !!rt && rt.mode === 'polling' && Date.now() - new Date(rt.heartbeatAt).getTime() < STALE_MS;
+}
+
+async function setCommandsAndMenu() {
+  if (!bot) return;
+  await bot.api
+    .setMyCommands([
+      { command: 'start', description: 'Boshlash / kalit bilan kirish' },
+      { command: 'panel', description: 'Lidlar paneli' },
+      { command: 'stats', description: 'Bugungi natijalar' },
+      { command: 'help', description: "Qo'llanma" },
+    ])
+    .catch(() => undefined);
+  if (webAppAvailable) {
+    await bot.api
+      .setChatMenuButton({ menu_button: { type: 'web_app', text: 'Panel', web_app: { url: `${webAppUrl}/` } } })
+      .catch((err) => logger.warn({ err: err.message }, "Menu button o'rnatilmadi"));
+  } else {
+    logger.warn("PUBLIC_URL HTTPS emas — Mini App tugmalari o'chirilgan (lokal rejim)");
+  }
+}
+
+async function runPolling(): Promise<void> {
+  if (!bot) return;
+  for (;;) {
+    try {
+      await bot.api.deleteWebhook();
+      await bot.start({
+        allowed_updates: [...ALLOWED_UPDATES],
+        drop_pending_updates: false,
+        onStart: (me) => logger.info({ bot: me.username }, '🤖 Bot polling rejimida ishga tushdi (kompyuterda)'),
+      });
+      return; // bot.stop() chaqirildi
+    } catch (err) {
+      // 409: boshqa joyda (Vercel) webhook o'rnatilgan — uni olib tashlab qayta urinamiz
+      const conflict = err instanceof GrammyError && err.error_code === 409;
+      logger.warn({ err: err instanceof Error ? err.message : err }, conflict ? 'Webhook bilan to\'qnashuv — qayta ulanmoqda' : 'Bot polling uzildi — qayta ulanmoqda');
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+  }
+}
+
 export async function startBot(): Promise<void> {
   if (!bot) {
-    logger.warn('BOT_TOKEN berilmagan — Telegram bot o\'chirilgan. Panel va API ishlayveradi.');
+    logger.warn("BOT_TOKEN berilmagan — Telegram bot o'chirilgan. Panel va API ishlayveradi.");
     return;
   }
   setupBot();
   const me = await bot.api.getMe();
   botInfo.set(me.username);
   bot.botInfo = me;
-
-  await bot.api
-    .setMyCommands([
-      { command: 'start', description: 'Boshlash / kalit bilan kirish' },
-      { command: 'panel', description: 'Lidlar paneli' },
-      { command: 'stats', description: 'Bugungi natijalar' },
-      { command: 'help', description: "Qo'llanma" },
-    ])
-    .catch(() => undefined);
-
-  if (webAppAvailable) {
-    await bot.api
-      .setChatMenuButton({ menu_button: { type: 'web_app', text: 'Panel', web_app: { url: `${webAppUrl}/` } } })
-      .catch((err) => logger.warn({ err: err.message }, 'Menu button o\'rnatilmadi'));
-  } else {
-    logger.warn('PUBLIC_URL HTTPS emas — Mini App tugmalari o\'chirilgan (lokal rejim)');
-  }
+  await setCommandsAndMenu();
 
   if (config.BOT_MODE === 'webhook') {
     const url = `${config.PUBLIC_URL}/api/telegram/webhook`;
     await bot.api.setWebhook(url, { secret_token: config.WEBHOOK_SECRET, allowed_updates: [...ALLOWED_UPDATES] });
     logger.info({ bot: me.username, url }, 'Bot webhook rejimida ishga tushdi');
-  } else {
-    await bot.api.deleteWebhook().catch(() => undefined);
-    bot
-      .start({ allowed_updates: [...ALLOWED_UPDATES], drop_pending_updates: false, onStart: () => logger.info({ bot: me.username }, 'Bot polling rejimida ishga tushdi') })
-      .catch((err) => logger.error({ err }, 'Bot polling to\'xtadi'));
+    return;
   }
+  await writeHeartbeat('polling');
+  heartbeat = setInterval(() => void writeHeartbeat('polling'), HEARTBEAT_MS);
+  void runPolling();
 }
 
 export async function stopBot() {
-  if (bot && config.BOT_MODE === 'polling' && bot.isRunning()) await bot.stop();
+  if (heartbeat) clearInterval(heartbeat);
+  heartbeat = null;
+  if (bot && config.BOT_MODE === 'polling') {
+    await writeHeartbeat('stopped');
+    if (bot.isRunning()) await bot.stop();
+  }
 }
 
+// ---------- Serverless (Vercel) ----------
+
+let lastWebhookCheck = 0;
+
 /**
- * Serverless (Vercel) uchun: handlerlar + bot ma'lumoti; webhook manzili mos kelmasa — qayta o'rnatiladi.
- * Har bir sovuq ishga tushishda bir marta chaqiriladi.
+ * Webhookni tekshirish/tiklash (har 60 soniyada ko'pi bilan bir marta).
+ * Kompyuterdagi bot ishlayotgan bo'lsa — tegmaydi.
  */
+export async function ensureWebhook(force = false): Promise<void> {
+  if (!bot || config.BOT_MODE !== 'webhook') return;
+  if (!force && Date.now() - lastWebhookCheck < 60_000) return;
+  lastWebhookCheck = Date.now();
+  if (await localPollingActive()) return;
+  const url = `${config.PUBLIC_URL}/api/telegram/webhook`;
+  const info = await bot.api.getWebhookInfo();
+  if (info.url === url) return;
+  await bot.api.setWebhook(url, { secret_token: config.WEBHOOK_SECRET, allowed_updates: [...ALLOWED_UPDATES] });
+  await setCommandsAndMenu();
+  logger.info({ url }, "Telegram webhook o'rnatildi");
+}
+
+/** Har bir sovuq ishga tushishda bir marta: handlerlar, bot ma'lumoti, webhook */
 export async function initBotServerless(): Promise<void> {
   if (!bot) return;
   setupBot();
   await bot.init();
   botInfo.set(bot.botInfo.username);
-  const url = `${config.PUBLIC_URL}/api/telegram/webhook`;
-  const info = await bot.api.getWebhookInfo();
-  if (info.url === url) return;
-  await bot.api.setWebhook(url, { secret_token: config.WEBHOOK_SECRET, allowed_updates: [...ALLOWED_UPDATES] });
-  await bot.api
-    .setMyCommands([
-      { command: 'start', description: 'Boshlash / kalit bilan kirish' },
-      { command: 'panel', description: 'Lidlar paneli' },
-      { command: 'stats', description: 'Bugungi natijalar' },
-      { command: 'help', description: "Qo'llanma" },
-    ])
-    .catch(() => undefined);
-  if (webAppAvailable) {
-    await bot.api
-      .setChatMenuButton({ menu_button: { type: 'web_app', text: 'Panel', web_app: { url: `${webAppUrl}/` } } })
-      .catch(() => undefined);
-  }
-  logger.info({ url }, "Telegram webhook o'rnatildi");
+  await ensureWebhook(true);
 }

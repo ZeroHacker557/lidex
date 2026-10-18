@@ -2,7 +2,7 @@
 // Doimiy serverdan farqi: Socket.IO yo'q (mijozlar so'rovlar bilan yangilanadi), bot webhook orqali,
 // fon vazifalari esa /api/cron/tick orqali (Vercel Cron yoki cron-job.org) bajariladi.
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { initBotServerless } from '../server/src/bot/index.js';
+import { ensureWebhook, initBotServerless } from '../server/src/bot/index.js';
 import { ensureSuperadmin } from '../server/src/bootstrap.js';
 import { initStore } from '../server/src/db/index.js';
 import { createApp } from '../server/src/http/app.js';
@@ -25,5 +25,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     throw err;
   });
   const app = await ready;
+  // Kompyuterdagi bot o'chgan bo'lsa — webhookni tiklash (60 soniyada ko'pi bilan bir marta tekshiriladi)
+  await ensureWebhook().catch((err) => logger.warn({ err: err?.message ?? err }, 'Webhook tekshiruvi xatosi'));
   return app(req as never, res as never);
 }

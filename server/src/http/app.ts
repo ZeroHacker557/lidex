@@ -7,6 +7,7 @@ import { webhookCallback } from 'grammy';
 import { config, isProd, isServerless } from '../config.js';
 import { db } from '../db/index.js';
 import { bot } from '../bot/instance.js';
+import { localPollingActive } from '../bot/index.js';
 import { notFound, unauthorized } from '../lib/errors.js';
 import { runTick } from '../scheduler/index.js';
 import { WEB_DIST_DIR } from '../paths.js';
@@ -44,6 +45,11 @@ export function createApp(): Express {
     const key = typeof req.query.key === 'string' ? req.query.key : null;
     if (!config.CRON_SECRET || (auth !== `Bearer ${config.CRON_SECRET}` && key !== config.CRON_SECRET)) {
       throw unauthorized("Cron kaliti noto'g'ri");
+    }
+    // Kompyuterdagi server ishlayotgan bo'lsa, fon vazifalarini o'zi bajaradi — takrorlamaymiz
+    if (isServerless && (await localPollingActive())) {
+      res.json({ ok: true, skipped: 'local-server' });
+      return;
     }
     res.json({ ok: true, ...(await runTick()) });
   });
