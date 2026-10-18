@@ -89,6 +89,21 @@ async function tryBindKey(ctx: Context, key: string) {
 export function setupBot() {
   if (!bot) return;
 
+  // Diagnostika: kelgan har bir hodisani qisqacha logga yozish (LOG_LEVEL=debug)
+  bot.use((ctx, next) => {
+    const msg = ctx.message ?? ctx.channelPost;
+    logger.debug(
+      {
+        update: Object.keys(ctx.update).filter((k) => k !== 'update_id')[0],
+        chat: ctx.chat ? `${ctx.chat.type}:${ctx.chat.id}${'title' in ctx.chat ? ` "${ctx.chat.title}"` : ''}` : undefined,
+        from: ctx.from ? `${ctx.from.is_bot ? 'BOT ' : ''}${ctx.from.username ?? ctx.from.id}` : undefined,
+        text: msg && 'text' in msg ? msg.text?.slice(0, 60) : undefined,
+      },
+      'Telegram update',
+    );
+    return next();
+  });
+
   bot.catch((err) => {
     const e = err.error;
     if (e instanceof GrammyError) logger.error({ desc: e.description }, 'Bot: Telegram API xatosi');
@@ -120,7 +135,8 @@ export function setupBot() {
 
   bot.command('chatid', async (ctx) => {
     if (ctx.chat.type === 'private') return ctx.reply(`Sizning Telegram ID: <code>${ctx.from?.id}</code>`, { parse_mode: 'HTML' });
-    const g = await groupByChatId(ctx.chat.id);
+    // Guruh hali ro'yxatda bo'lmasa — shu buyruq orqali ham qo'shiladi
+    const g = (await groupByChatId(ctx.chat.id)) ?? (await registerChat({ id: ctx.chat.id, title: 'title' in ctx.chat ? ctx.chat.title : undefined, type: ctx.chat.type }));
     await ctx.reply(
       `Chat ID: <code>${ctx.chat.id}</code>\nHolat: <b>${g ? (g.status === 'active' ? 'faol ✅' : g.status === 'pending' ? 'tasdiqlash kutilmoqda ⏳' : "o'chirilgan") : "ro'yxatda yo'q"}</b>`,
       { parse_mode: 'HTML' },
