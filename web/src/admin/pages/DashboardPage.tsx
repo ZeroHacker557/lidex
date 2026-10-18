@@ -220,7 +220,7 @@ export function DashboardPage() {
             >
               <ul className="thin-scroll max-h-[440px] divide-y divide-line/60 overflow-y-auto">
                 {activity.data?.items.map((e, i) => (
-                  <motion.li key={e.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.025, duration: 0.25 }}>
+                  <motion.li key={e.id} initial={{ x: -6 }} animate={{ x: 0 }} transition={{ delay: i * 0.025, duration: 0.25 }}>
                     <button onClick={() => openLead(e.leadId)} className="flex w-full items-start gap-3 px-5 py-3 text-left transition-colors hover:bg-surface-2/70">
                       <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: e.toStatus ? STATUS_META[e.toStatus].color : 'var(--c-muted)' }} />
                       <span className="min-w-0 flex-1 text-[13px]">

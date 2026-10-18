@@ -55,23 +55,23 @@ export function LoginPage({ onLogin }: { onLogin: () => void | Promise<void> }) 
 
         <div className="relative my-auto max-w-lg">
           <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ y: 16 }}
+            animate={{ y: 0 }}
             transition={{ duration: 0.6, ease }}
             className="font-display text-[44px] font-extrabold leading-[1.08] tracking-tight"
           >
             Har bir lid —{' '}
             <span className="bg-gradient-to-r from-[#a5b4fc] via-[#c4b5fd] to-[#f0abfc] bg-clip-text text-transparent">nazoratda.</span>
           </motion.h1>
-          <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.1 }} className="mt-4 text-[16px] leading-relaxed text-white/65">
+          <motion.p initial={{ y: 16 }} animate={{ y: 0 }} transition={{ duration: 0.6, ease, delay: 0.1 }} className="mt-4 text-[16px] leading-relaxed text-white/65">
             Telegram guruhlardan tushgan mijozlar avtomatik xodimlarga taqsimlanadi, siz esa natijani real vaqtda ko'rasiz.
           </motion.p>
           <ul className="mt-8 space-y-3.5">
             {FEATURES.map((f, i) => (
               <motion.li
                 key={f.text}
-                initial={{ opacity: 0, x: -12 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ x: -12 }}
+                animate={{ x: 0 }}
                 transition={{ duration: 0.5, ease, delay: 0.2 + i * 0.08 }}
                 className="flex items-center gap-3 text-[14.5px] text-white/85"
               >
@@ -88,8 +88,8 @@ export function LoginPage({ onLogin }: { onLogin: () => void | Promise<void> }) 
             {(['success', 'postponed', 'new'] as const).map((s, i) => (
               <motion.div
                 key={s}
-                initial={{ opacity: 0, y: 20, rotate: 0 }}
-                animate={{ opacity: 1, y: 0, rotate: [-4, 3, -2][i] }}
+                initial={{ y: 20, rotate: 0 }}
+                animate={{ y: 0, rotate: [-4, 3, -2][i] }}
                 transition={{ ...spring, delay: 0.45 + i * 0.1 }}
                 className="absolute flex w-56 items-center gap-3 rounded-2xl bg-white/[0.07] p-3 ring-1 ring-white/10 backdrop-blur-md"
                 style={{ left: i * 120, top: [8, 34, 0][i] }}
@@ -110,8 +110,8 @@ export function LoginPage({ onLogin }: { onLogin: () => void | Promise<void> }) 
       <div className="mesh relative flex items-center justify-center px-5 py-12">
         <motion.form
           onSubmit={submit}
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ y: 18 }}
+          animate={{ y: 0 }}
           transition={{ duration: 0.5, ease }}
           className="w-full max-w-[400px]"
         >

@@ -204,9 +204,9 @@ export function LeadDetailPage() {
 
         {/* Status */}
         <section className="card overflow-hidden p-4 shadow-card">
-          <AnimatePresence mode="wait" initial={false}>
+          <>
             {showFinal ? (
-              <motion.div key="final" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25, ease }}>
+              <motion.div key="final" initial={{ y: 8 }} animate={{ y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25, ease }}>
                 <div className="flex items-center gap-3.5 rounded-2xl p-3.5" style={{ backgroundColor: `${meta.color}12` }}>
                   <span className="flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-card" style={{ backgroundColor: meta.color }}>
                     <FinalIcon className="h-6 w-6" strokeWidth={2.4} />
@@ -225,7 +225,7 @@ export function LeadDetailPage() {
                 </Button>
               </motion.div>
             ) : (
-              <motion.div key="pick" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25, ease }}>
+              <motion.div key="pick" initial={{ y: 8 }} animate={{ y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25, ease }}>
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="font-display text-[16px] font-bold">{editing ? 'Yangi statusni tanlang' : 'Natijani belgilang'}</h2>
                   {editing && (
@@ -253,8 +253,8 @@ export function LeadDetailPage() {
                     return (
                       <motion.button
                         key={s}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        initial={{ y: 8 }}
+                        animate={{ y: 0 }}
                         transition={{ ...spring, delay: i * 0.03 }}
                         whileTap={{ scale: 0.95 }}
                         disabled={status.isPending}
@@ -297,7 +297,7 @@ export function LeadDetailPage() {
                 </AnimatePresence>
               </motion.div>
             )}
-          </AnimatePresence>
+          </>
         </section>
 
         {/* Ma'lumotlar */}
@@ -398,7 +398,7 @@ const TONES = {
 
 function Notice({ tone, icon, title, meta, children }: { tone: keyof typeof TONES; icon: React.ReactNode; title: string; meta?: string; children?: React.ReactNode }) {
   return (
-    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease }} className={clsx('flex gap-3 rounded-2xl p-3.5 ring-1 ring-inset', TONES[tone])}>
+    <motion.div initial={{ y: 6 }} animate={{ y: 0 }} transition={{ duration: 0.3, ease }} className={clsx('flex gap-3 rounded-2xl p-3.5 ring-1 ring-inset', TONES[tone])}>
       <span className="mt-0.5 shrink-0">{icon}</span>
       <div className="min-w-0 text-[14px]">
         <p className="font-bold">{title}</p>

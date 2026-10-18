@@ -49,8 +49,18 @@ async function toEmployee(emp: WithId<Employee>, html: string, opts: SendOpts = 
 }
 
 export async function notifyNewLead(emp: WithId<Employee>, lead: WithId<Lead>) {
-  const title = lead.isDuplicate ? '♻️ Takroriy lid' : '🆕 Yangi lid';
-  return toEmployee(emp, leadCard(lead, title), { keyboard: leadKeyboard(lead) });
+  // Xodimda hozir javob kutayotgan yangi lidlar soni (shu lid ham kiradi)
+  const waiting = await db()
+    .count(COL.leads, { where: [['assignedEmployeeId', '==', emp.id], ['status', '==', 'new']] })
+    .catch(() => 1);
+  const head = [
+    '🔔 <b>Sizga yangi lid keldi!</b>',
+    `Javob kutayotgan yangi lidlar: <b>${waiting} ta</b>`,
+    '━━━━━━━━━━━━━━━',
+    '',
+  ].join('\n');
+  const title = lead.isDuplicate ? '♻️ Takroriy lid' : '🆕 Lid';
+  return toEmployee(emp, head + leadCard(lead, title), { keyboard: leadKeyboard(lead) });
 }
 
 export async function notifyReassigned(emp: WithId<Employee>, lead: WithId<Lead>) {

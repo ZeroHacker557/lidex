@@ -139,6 +139,60 @@ body.miniapp .selectable {
   }
 }
 
+/* Sahifa paydo bo'lishi — CSS animatsiya: JS kutmaydi, hech qachon "bo'sh ekran"da qolmaydi */
+/* Faqat siljish: shaffoflik ishlatilmaydi — kadrlar to'xtasa ham kontent ko'rinib turadi */
+@keyframes page-in {
+  from {
+    transform: translateY(12px);
+  }
+  to {
+    transform: none;
+  }
+}
+.page-in {
+  animation: page-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.stagger > * {
+  animation: page-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.stagger > :nth-child(2) {
+  animation-delay: 35ms;
+}
+.stagger > :nth-child(3) {
+  animation-delay: 70ms;
+}
+.stagger > :nth-child(4) {
+  animation-delay: 105ms;
+}
+.stagger > :nth-child(5) {
+  animation-delay: 140ms;
+}
+.stagger > :nth-child(6) {
+  animation-delay: 175ms;
+}
+.stagger > :nth-child(7) {
+  animation-delay: 210ms;
+}
+.stagger > :nth-child(8) {
+  animation-delay: 245ms;
+}
+.stagger > :nth-child(9) {
+  animation-delay: 280ms;
+}
+.stagger > :nth-child(10) {
+  animation-delay: 315ms;
+}
+.stagger > :nth-child(11) {
+  animation-delay: 350ms;
+}
+.stagger > :nth-child(12) {
+  animation-delay: 385ms;
+}
+.stagger > :nth-child(n + 13) {
+  animation-delay: 420ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

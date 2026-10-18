@@ -7,6 +7,9 @@ import '../index.css';
 import { ToastProvider } from '../shared/ui';
 import { AdminApp } from './App';
 
+// Bosh sahifa (/) yoki noto'g'ri manzil — /admin ga
+if (!location.pathname.startsWith('/admin')) history.replaceState(null, '', '/admin' + location.search);
+
 try {
   const theme = localStorage.getItem('lx_theme');
   if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;

@@ -41,12 +41,13 @@ export function leadUrl(leadId: string) {
 export function leadKeyboard(lead: WithId<Lead>, opts: { quick?: boolean } = {}): InlineKeyboard {
   const kb = new InlineKeyboard();
   const quick = opts.quick ?? !STATUS_META[lead.status].final;
+  // Asosiy tugma — ilovada lidni ochish (eng tepada)
+  if (webAppAvailable) kb.webApp('📲 Ilovani ochish', leadUrl(lead.id)).row();
   if (quick) {
     kb.text('🟢 HA dedi', `st:${lead.id}:s`).text("🟠 YO'Q dedi", `st:${lead.id}:r`).row();
     kb.text("⚪️ Ko'tarmadi", `st:${lead.id}:n`).text('🔴 Bekor', `st:${lead.id}:c`).row();
     kb.text('🟡 Ertaga', `st:${lead.id}:pt`).text('🟡 Keyinga (sanasiz)', `st:${lead.id}:pn`).row();
   }
-  if (webAppAvailable) kb.webApp(quick ? '📋 Batafsil / sana tanlash' : '✏️ Ochish / tahrirlash', leadUrl(lead.id));
   return kb;
 }
 

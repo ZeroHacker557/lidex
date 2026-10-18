@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Check, ChevronDown, Copy, type LucideIcon } from 'lucide-react';
 import { useCallback, useState, type ReactNode, type SelectHTMLAttributes } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { AnimatedNumber, ease, spring } from '../../shared/motion';
+import { AnimatedNumber, spring } from '../../shared/motion';
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
   return (
@@ -72,12 +72,7 @@ export function Card({
 }) {
   const Icon = icon;
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease, delay }}
-      className={clsx('card overflow-hidden shadow-card', className)}
-    >
+    <section className={clsx('page-in card overflow-hidden shadow-card', className)} style={{ animationDelay: `${delay * 1000}ms` }}>
       {title && (
         <div className="flex items-center justify-between gap-2 border-b border-line/60 px-5 py-4">
           <h2 className="flex items-center gap-2.5 font-display text-[15.5px] font-bold">
@@ -92,7 +87,7 @@ export function Card({
         </div>
       )}
       <div className={pad ? 'p-5' : ''}>{children}</div>
-    </motion.section>
+    </section>
   );
 }
 
@@ -124,12 +119,9 @@ export function KpiTile({
 }) {
   const t = TONE[tone];
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease, delay }}
-      whileHover={{ y: -2 }}
-      className="card relative overflow-hidden p-4 shadow-card"
+    <div
+      className="page-in card relative overflow-hidden p-4 shadow-card transition-transform duration-300 hover:-translate-y-0.5"
+      style={{ animationDelay: `${delay * 1000}ms` }}
     >
       <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-60 blur-2xl" style={{ backgroundColor: t.bg }} />
       <div className="relative flex items-start justify-between gap-2">
@@ -145,7 +137,7 @@ export function KpiTile({
         {suffix}
       </p>
       {sub && <p className="relative mt-2 text-[12px] text-muted">{sub}</p>}
-    </motion.div>
+    </div>
   );
 }
 
@@ -160,7 +152,7 @@ export function Td({ children, className }: { children?: ReactNode; className?: 
 export function Tr({ children, onClick, index = 0, className }: { children: ReactNode; onClick?: () => void; index?: number; className?: string }) {
   return (
     <motion.tr
-      initial={{ opacity: 0 }}
+      initial={false}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.25, delay: Math.min(index, 15) * 0.02 }}
       onClick={onClick}

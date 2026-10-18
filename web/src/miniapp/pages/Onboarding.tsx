@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { ease, spring } from '../../shared/motion';
 import { Button } from '../../shared/ui';
@@ -44,12 +44,12 @@ export function Onboarding({ onDone }: { onDone: () => void | Promise<void> }) {
       </div>
 
       <div className="relative flex flex-1 flex-col">
-        <AnimatePresence mode="wait" custom={dir} initial={false}>
+        <>
           <motion.div
             key={i}
             custom={dir}
-            initial={{ opacity: 0, x: dir * 40 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ x: dir * 40 }}
+            animate={{ x: 0 }}
             exit={{ opacity: 0, x: dir * -40 }}
             transition={{ duration: 0.32, ease }}
             drag="x"
@@ -62,8 +62,8 @@ export function Onboarding({ onDone }: { onDone: () => void | Promise<void> }) {
             className="flex flex-1 flex-col pt-12"
           >
             <motion.div
-              initial={{ scale: 0.6, rotate: -12, opacity: 0 }}
-              animate={{ scale: 1, rotate: 0, opacity: 1 }}
+              initial={{ scale: 0.6, rotate: -12 }}
+              animate={{ scale: 1, rotate: 0 }}
               transition={{ ...spring, delay: 0.08 }}
               className="relative mb-7 h-24 w-24"
             >
@@ -81,7 +81,7 @@ export function Onboarding({ onDone }: { onDone: () => void | Promise<void> }) {
             <h1 className="mt-2 font-display text-[30px] font-extrabold leading-[1.1] tracking-tight">{step.title}</h1>
             <div className="mt-4 text-[15.5px] leading-relaxed text-fg/85">{step.body}</div>
           </motion.div>
-        </AnimatePresence>
+        </>
       </div>
 
       <div className="relative mt-8 flex gap-2">

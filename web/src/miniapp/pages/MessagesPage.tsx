@@ -5,7 +5,7 @@ import { CheckCheck, Inbox, Mail, Paperclip, TriangleAlert } from 'lucide-react'
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { smartDate } from '../../shared/format';
-import { Stagger, itemVariants } from '../../shared/motion';
+import { Stagger } from '../../shared/motion';
 import type { StaffMessage } from '../../shared/types';
 import { Button, Empty, ErrorBox, Skeleton, errorText, useToast } from '../../shared/ui';
 import { api } from '../session';
@@ -65,8 +65,6 @@ function MessageCard({ m, onChanged }: { m: StaffMessage; onChanged: () => void 
 
   return (
     <motion.div
-      variants={itemVariants}
-      layout
       className={clsx('relative overflow-hidden rounded-[20px] border bg-surface p-4 shadow-soft', !m.readAt ? 'border-transparent' : 'border-line/60')}
       style={!m.readAt ? { boxShadow: `0 0 0 1.5px ${warning ? '#f59e0b' : 'var(--c-brand)'}, 0 8px 24px -12px ${warning ? '#f59e0b' : 'var(--c-brand)'}` } : undefined}
       onClick={() => {

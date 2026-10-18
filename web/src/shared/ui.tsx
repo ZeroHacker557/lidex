@@ -83,8 +83,8 @@ export function StatusBadge({ status, size = 'md', short }: { status: LeadStatus
   return (
     <motion.span
       key={status}
-      initial={{ scale: 0.85, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
+      initial={{ scale: 0.85 }}
+      animate={{ scale: 1 }}
       transition={spring}
       className={clsx(
         'inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full font-semibold ring-1 ring-inset',
@@ -130,8 +130,8 @@ export function Avatar({ name, online, size = 36, ring }: { name: string | null 
 export function Empty({ icon, title, text, action }: { icon?: ReactNode; title: string; text?: string; action?: ReactNode }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ y: 8 }}
+      animate={{ y: 0 }}
       transition={{ duration: 0.4, ease }}
       className="flex flex-col items-center justify-center px-6 py-14 text-center"
     >

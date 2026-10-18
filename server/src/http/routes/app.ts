@@ -13,6 +13,7 @@ import { bindEmployeeByKey, findEmployeeByTelegram, publicEmployee } from '../..
 import { addNote, changeStatus, getLeadOr404, markViewed, toLeadDto } from '../../services/leads.js';
 import { markMessageRead } from '../../services/messages.js';
 import { emitToAdmins } from '../../services/realtime.js';
+import { safeAvgResponse } from '../../services/stats.js';
 import { employeeActor, requireEmployee } from '../middleware.js';
 
 export const appRouter = Router();
@@ -228,7 +229,7 @@ appRouter.get('/stats', async (req, res) => {
   const [counts, response] = await Promise.all([
     Promise.all(LEAD_STATUSES.map((s) => db().count(COL.leads, { where: [...base, ['status', '==', s]] }))),
     // Firestore average() son bo'lmagan (null) qiymatlarni hisobga olmaydi
-    db().aggregate(COL.leads, { where: base }, { avg: 'responseSeconds' }),
+    safeAvgResponse(base),
   ]);
   const byStatus = Object.fromEntries(LEAD_STATUSES.map((s, i) => [s, counts[i]]));
   const total = counts.reduce((a, b) => a + b, 0);
@@ -237,6 +238,6 @@ appRouter.get('/stats', async (req, res) => {
     total,
     byStatus,
     conversion: total ? Math.round(((byStatus.success ?? 0) / total) * 100) : 0,
-    avgResponseSeconds: response.avg,
+    avgResponseSeconds: response,
   });
 });

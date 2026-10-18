@@ -48,7 +48,7 @@ export function KeyScreen({
   return (
     <div className="relative mx-auto flex min-h-[100dvh] max-w-md flex-col justify-center overflow-hidden px-6 py-10">
       <div className="mesh pointer-events-none absolute inset-0" />
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease }} className="relative">
+      <motion.div initial={{ y: 16 }} animate={{ y: 0 }} transition={{ duration: 0.5, ease }} className="relative">
         <div className="mb-7 flex items-center gap-2.5">
           <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-gradient text-white shadow-glow">
             <Logo className="h-5 w-5" />
@@ -57,8 +57,8 @@ export function KeyScreen({
         </div>
 
         <motion.div
-          initial={{ scale: 0.7, rotate: -20, opacity: 0 }}
-          animate={{ scale: 1, rotate: 0, opacity: 1 }}
+          initial={{ scale: 0.7, rotate: -20 }}
+          animate={{ scale: 1, rotate: 0 }}
           transition={{ ...spring, delay: 0.1 }}
           className="mb-5 flex h-16 w-16 items-center justify-center rounded-[22px] bg-amber-400/15 text-amber-500 ring-1 ring-amber-400/30"
         >

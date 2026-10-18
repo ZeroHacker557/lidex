@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import {
   BellRing,
   Eye,
@@ -14,7 +13,6 @@ import {
 } from 'lucide-react';
 import { EVENT_LABELS, STATUS_META } from '@shared/statuses';
 import { fullDate } from './format';
-import { itemVariants, listVariants } from './motion';
 import { STATUS_ICON } from './statusIcons';
 import type { LeadEvent } from './types';
 
@@ -35,7 +33,7 @@ const ICONS: Partial<Record<LeadEvent['type'], [LucideIcon, string]>> = {
 export function Timeline({ events, showActor = true }: { events: LeadEvent[]; showActor?: boolean }) {
   if (!events.length) return <p className="py-4 text-center text-sm text-muted">Hali hech qanday harakat yo'q</p>;
   return (
-    <motion.ol className="relative" variants={listVariants} initial="hidden" animate="show">
+    <ol className="stagger relative">
       <span className="absolute bottom-3 left-[15px] top-3 w-px bg-gradient-to-b from-line via-line to-transparent" />
       {events.map((e) => {
         const toMeta = e.toStatus ? STATUS_META[e.toStatus] : null;
@@ -43,7 +41,7 @@ export function Timeline({ events, showActor = true }: { events: LeadEvent[]; sh
         const [Icon, color] = isStatus ? [STATUS_ICON[e.toStatus!], toMeta!.color] : ICONS[e.type] ?? [Inbox, '#64748b'];
         const postponedUntil = typeof e.meta?.postponedUntil === 'string' ? e.meta.postponedUntil : null;
         return (
-          <motion.li key={e.id} variants={itemVariants} className="relative flex gap-3 pb-4 last:pb-0">
+          <li key={e.id} className="relative flex gap-3 pb-4 last:pb-0">
             <span
               className="relative z-10 flex h-[31px] w-[31px] shrink-0 items-center justify-center rounded-full ring-4 ring-surface"
               style={{ backgroundColor: `${color}1c`, color }}
@@ -73,9 +71,9 @@ export function Timeline({ events, showActor = true }: { events: LeadEvent[]; sh
                 {e.actorType === 'admin' && ' (admin)'}
               </p>
             </div>
-          </motion.li>
+          </li>
         );
       })}
-    </motion.ol>
+    </ol>
   );
 }

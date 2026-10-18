@@ -11,6 +11,14 @@ export interface Actor {
 
 export const SYSTEM: Actor = { type: 'system', id: null, name: 'Tizim' };
 
+// Ketma-ket yozilgan hodisalar bir xil millisekundga tushsa ham tarix tartibi saqlanishi uchun
+let lastEventMs = 0;
+function monotonicNow(): Date {
+  const now = Math.max(Date.now(), lastEventMs + 1);
+  lastEventMs = now;
+  return new Date(now);
+}
+
 export async function logEvent(
   lead: Pick<WithId<Lead>, 'id' | 'seq' | 'groupId' | 'assignedEmployeeId'>,
   actor: Actor,
@@ -30,7 +38,7 @@ export async function logEvent(
     toStatus: extra.toStatus ?? null,
     text: extra.text ?? null,
     meta: extra.meta ?? null,
-    createdAt: new Date(),
+    createdAt: monotonicNow(),
   };
   try {
     const id = await db().create(COL.events, event);

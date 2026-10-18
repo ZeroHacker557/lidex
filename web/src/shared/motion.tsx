@@ -5,19 +5,9 @@ export const spring = { type: 'spring', stiffness: 420, damping: 34, mass: 0.8 }
 export const softSpring = { type: 'spring', stiffness: 260, damping: 30 } as const;
 export const ease = [0.22, 1, 0.36, 1] as const;
 
-/** Sahifa paydo bo'lishi: yumshoq yuqoriga siljish + shaffoflik */
+/** Sahifa paydo bo'lishi (CSS): har bir sahifa almashganda qayta o'ynaydi, chiqish animatsiyasini kutmaydi */
 export function Page({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <motion.div
-      className={className}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -6 }}
-      transition={{ duration: 0.32, ease }}
-    >
-      {children}
-    </motion.div>
-  );
+  return <div className={className ? `page-in ${className}` : 'page-in'}>{children}</div>;
 }
 
 export const listVariants: Variants = {
@@ -30,23 +20,10 @@ export const itemVariants: Variants = {
   show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.35, ease } },
 };
 
-/** Ro'yxat — elementlar ketma-ket paydo bo'ladi */
+/** Ro'yxat — elementlar ketma-ket paydo bo'ladi (CSS, .stagger) */
 export function Stagger({ children, className, as = 'div' }: { children: ReactNode; className?: string; as?: 'div' | 'ul' | 'ol' }) {
-  const C = motion[as];
-  return (
-    <C className={className} variants={listVariants} initial="hidden" animate="show">
-      {children}
-    </C>
-  );
-}
-
-export function StaggerItem({ children, className, as = 'div' }: { children: ReactNode; className?: string; as?: 'div' | 'li' }) {
-  const C = motion[as];
-  return (
-    <C className={className} variants={itemVariants} layout="position">
-      {children}
-    </C>
-  );
+  const C = as;
+  return <C className={className ? `stagger ${className}` : 'stagger'}>{children}</C>;
 }
 
 /** Raqam o'zgarganda silliq sanab chiqadi */

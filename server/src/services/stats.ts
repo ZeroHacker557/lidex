@@ -1,6 +1,7 @@
 import { LEAD_STATUSES, OPEN_STATUSES, type LeadStatus } from '../../../shared/statuses.js';
 import { COL, db, type Employee, type Filter, type Lead, type WithId } from '../db/index.js';
 import { addDays, localDateKey, startOfLocalDay } from '../lib/time.js';
+import { logger } from '../logger.js';
 import { onlineEmployeeIds } from './realtime.js';
 
 /** Firestore `in` 30 tadan ko'p qiymat qabul qilmaydi */
@@ -17,6 +18,16 @@ export interface DashboardInput {
   employees: WithId<Employee>[];
 }
 
+/** O'rtacha javob vaqti: indeks hali tayyor bo'lmasa butun dashboard yiqilmasin */
+export async function safeAvgResponse(where: Filter[]): Promise<number | null> {
+  try {
+    return (await db().aggregate(COL.leads, { where }, { avg: 'responseSeconds' })).avg;
+  } catch (err) {
+    logger.warn({ err: (err as Error).message?.slice(0, 160) }, "O'rtacha javob vaqtini hisoblab bo'lmadi");
+    return null;
+  }
+}
+
 async function countByStatus(where: Filter[]): Promise<Record<LeadStatus, number>> {
   const counts = await Promise.all(LEAD_STATUSES.map((s) => db().count(COL.leads, { where: [...where, ['status', '==', s]] })));
   return Object.fromEntries(LEAD_STATUSES.map((s, i) => [s, counts[i]])) as Record<LeadStatus, number>;
@@ -31,7 +42,7 @@ export async function dashboard({ scope, from, to, employees }: DashboardInput) 
 
   const [byStatus, response, openNow, overdueReminders, unassigned, flagged, daily, perEmployee] = await Promise.all([
     countByStatus(range),
-    db().aggregate(COL.leads, { where: range }, { avg: 'responseSeconds' }),
+    safeAvgResponse(range),
     db().count(COL.leads, { where: [...scope, ['status', 'in', OPEN_STATUSES]] }),
     // Belgilangan sanasi o'tib ketgan, lekin hali ishlanmagan lidlar
     db().count(COL.leads, {
@@ -60,7 +71,7 @@ export async function dashboard({ scope, from, to, employees }: DashboardInput) 
     total,
     byStatus,
     conversion: total ? Math.round((byStatus.success / total) * 100) : 0,
-    avgResponseSeconds: response.avg,
+    avgResponseSeconds: response,
     openNow,
     overdueReminders,
     unassigned,
@@ -77,7 +88,7 @@ export async function employeeStats(employees: WithId<Employee>[], range: Filter
       const where: Filter[] = [...range, ['assignedEmployeeId', '==', e.id]];
       const [byStatus, response, openNow, lateNew] = await Promise.all([
         countByStatus(where),
-        db().aggregate(COL.leads, { where }, { avg: 'responseSeconds' }),
+        safeAvgResponse(where),
         db().count(COL.leads, { where: [['assignedEmployeeId', '==', e.id], ['status', 'in', OPEN_STATUSES]] }),
         db().count(COL.leads, {
           where: [
@@ -99,7 +110,7 @@ export async function employeeStats(employees: WithId<Employee>[], range: Filter
         total,
         byStatus,
         conversion: total ? Math.round((byStatus.success / total) * 100) : 0,
-        avgResponseSeconds: response.avg,
+        avgResponseSeconds: response,
         openNow,
         lateNew,
       };

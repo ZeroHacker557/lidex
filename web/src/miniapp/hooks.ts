@@ -14,7 +14,8 @@ export interface Summary {
 }
 
 export function useSummary() {
-  return useQuery({ queryKey: ['summary'], queryFn: () => api.get<Summary>('/summary'), refetchInterval: 60_000 });
+  // Hisoblagichlar (Yangi, eslatma, xabar) — har 10 soniyada; ilova qayta ochilganda darhol
+  return useQuery({ queryKey: ['summary'], queryFn: () => api.get<Summary>('/summary'), refetchInterval: 10_000, staleTime: 0 });
 }
 
 /** Telegram BackButton: ichki sahifalarda ko'rsatiladi */

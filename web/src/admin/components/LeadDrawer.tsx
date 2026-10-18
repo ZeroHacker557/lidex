@@ -131,8 +131,8 @@ function LeadDrawer({ id }: { id: string }) {
         {query.data && lead && (
           <motion.div
             className="thin-scroll flex-1 space-y-5 overflow-y-auto p-5"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ y: 10 }}
+            animate={{ y: 0 }}
             transition={{ duration: 0.3, ease, delay: 0.08 }}
           >
             {/* Sarlavha */}

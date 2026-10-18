@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { ease, spring } from '../shared/motion';
+import { spring } from '../shared/motion';
 import { useSocket } from '../shared/socket';
 import type { Lead } from '../shared/types';
 import { Avatar, Logo, useToast } from '../shared/ui';
@@ -210,18 +210,9 @@ export function Layout({ children }: { children: ReactNode }) {
             )}
           </motion.button>
         </header>
-        <AnimatePresence mode="wait">
-          <motion.main
-            key={location.pathname}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.28, ease }}
-            className="mx-auto max-w-[1440px] px-4 py-7 lg:px-8"
-          >
-            {children}
-          </motion.main>
-        </AnimatePresence>
+        <main key={location.pathname} className="page-in mx-auto max-w-[1440px] px-4 py-7 lg:px-8">
+          {children}
+        </main>
       </div>
 
       <LeadDrawerHost />

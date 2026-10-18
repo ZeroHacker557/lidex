@@ -158,7 +158,7 @@ export function ProfilePage({ onReplayOnboarding }: { onReplayOnboarding: () => 
             {ROADMAP.map((r, i) => {
               const ok = done(r.key);
               return (
-                <motion.li key={r.key} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05, duration: 0.3, ease }} className="flex gap-3">
+                <motion.li key={r.key} initial={{ x: -8 }} animate={{ x: 0 }} transition={{ delay: i * 0.05, duration: 0.3, ease }} className="flex gap-3">
                   <span
                     className={clsx(
                       'mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold',

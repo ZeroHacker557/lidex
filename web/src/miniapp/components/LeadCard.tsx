@@ -3,7 +3,6 @@ import { AlarmClock, ChevronRight, Flag, Phone, Repeat2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { STATUS_META } from '@shared/statuses';
 import { formatPhone, smartDate, timeAgo } from '../../shared/format';
-import { itemVariants } from '../../shared/motion';
 import { STATUS_ICON } from '../../shared/statusIcons';
 import type { Lead } from '../../shared/types';
 import { Skeleton } from '../../shared/ui';
@@ -19,8 +18,6 @@ export function LeadCard({ lead, showReminder }: { lead: Lead; showReminder?: bo
 
   return (
     <motion.button
-      variants={itemVariants}
-      layout="position"
       whileTap={{ scale: 0.98 }}
       onClick={() => {
         haptic.tap();

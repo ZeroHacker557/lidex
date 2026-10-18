@@ -17,8 +17,8 @@ export function BottomNav() {
   ];
   return (
     <motion.nav
-      initial={{ y: 90, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
+      initial={{ y: 90 }}
+      animate={{ y: 0 }}
       exit={{ y: 90, opacity: 0 }}
       transition={spring}
       className="fixed inset-x-0 bottom-0 z-40 px-4 pb-safe"

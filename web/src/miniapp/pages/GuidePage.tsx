@@ -20,8 +20,8 @@ export function GuidePage() {
         {GUIDE_STEPS.map((s, i) => (
           <motion.section
             key={i}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ y: 12 }}
+            animate={{ y: 0 }}
             transition={{ delay: i * 0.05, duration: 0.35, ease }}
             className="card p-4 shadow-soft"
           >

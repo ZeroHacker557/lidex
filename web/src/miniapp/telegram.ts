@@ -88,6 +88,17 @@ export function getInitData(): string | null {
   return null;
 }
 
+/** Mini App qayta faollashganda (fon rejimidan qaytganda) chaqiriladi */
+export function onAppActivated(cb: () => void): () => void {
+  const onVisible = () => document.visibilityState === 'visible' && cb();
+  document.addEventListener('visibilitychange', onVisible);
+  tg?.onEvent?.('activated', cb);
+  return () => {
+    document.removeEventListener('visibilitychange', onVisible);
+    (tg as unknown as { offEvent?: (e: string, c: () => void) => void } | null)?.offEvent?.('activated', cb);
+  };
+}
+
 export const haptic = {
   success: () => tg?.HapticFeedback?.notificationOccurred('success'),
   error: () => tg?.HapticFeedback?.notificationOccurred('error'),

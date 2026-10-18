@@ -1,5 +1,4 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { AnimatePresence } from 'framer-motion';
 import { Page } from '../shared/motion';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
@@ -18,7 +17,7 @@ import { Onboarding } from './pages/Onboarding';
 import { ProfilePage } from './pages/ProfilePage';
 import { RemindersPage } from './pages/RemindersPage';
 import { api, SessionCtx, setLogoutHandler, setToken, type Session } from './session';
-import { getInitData, haptic, tg } from './telegram';
+import { getInitData, haptic, onAppActivated, tg } from './telegram';
 
 type Phase =
   | { kind: 'loading' }
@@ -133,6 +132,9 @@ function Ready({
     void qc.invalidateQueries({ queryKey: ['reminders'] });
   }, [qc]);
 
+  // Ilova qayta ochilganda / fon rejimidan qaytganda — barcha ma'lumotlarni yangilash
+  useEffect(() => onAppActivated(() => void qc.invalidateQueries()), [qc]);
+
   useSocket(
     { kind: 'employee', token },
     {
@@ -175,8 +177,7 @@ function Ready({
   return (
     <SessionCtx.Provider value={session}>
       <div className={nested ? '' : 'pb-28'}>
-        <AnimatePresence mode="wait" initial={false}>
-          <Routes location={location} key={location.pathname}>
+        <Routes>
             <Route path="/" element={<Page><LeadsPage /></Page>} />
             <Route path="/reminders" element={<Page><RemindersPage /></Page>} />
             <Route path="/messages" element={<Page><MessagesPage /></Page>} />
@@ -187,10 +188,9 @@ function Ready({
             <Route path="/guide" element={<Page><GuidePage /></Page>} />
             <Route path="/lead/:id" element={<Page><LeadDetailPage /></Page>} />
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </AnimatePresence>
+        </Routes>
       </div>
-      <AnimatePresence>{!nested && <BottomNav />}</AnimatePresence>
+      {!nested && <BottomNav />}
     </SessionCtx.Provider>
   );
 }
