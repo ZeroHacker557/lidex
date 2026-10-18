@@ -1,13 +1,13 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
-import { Bell, Inbox, RefreshCw, Search, Sparkles, Trophy, X } from 'lucide-react';
+import { Bell, CircleCheckBig, Inbox, RefreshCw, Search, Sparkles, Trophy, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LEAD_STATUSES, STATUS_META, type LeadStatus } from '@shared/statuses';
 import { AnimatedNumber, Stagger, spring } from '../../shared/motion';
 import type { Lead, Paged } from '../../shared/types';
-import { Button, Empty, ErrorBox } from '../../shared/ui';
+import { Avatar, Button, Empty, ErrorBox } from '../../shared/ui';
 import { LeadCard, LeadCardSkeleton } from '../components/LeadCard';
 import { useSummary } from '../hooks';
 import { api, useSession } from '../session';
@@ -49,36 +49,28 @@ export function LeadsPage() {
 
   const tabs: Array<{ id: Tab; label: string; count?: number; color?: string }> = [
     { id: 'active', label: 'Faol', count: summary?.active },
-    ...LEAD_STATUSES.map((s) => ({ id: s as Tab, label: STATUS_META[s].short, count: summary?.byStatus[s], color: STATUS_META[s].color })),
     { id: 'all', label: 'Hammasi', count: summary?.total },
+    ...LEAD_STATUSES.map((s) => ({ id: s as Tab, label: STATUS_META[s].short, count: summary?.byStatus[s], color: STATUS_META[s].color })),
   ];
-
-  const firstName = employee.fullName.split(' ')[0];
 
   return (
     <div className="mx-auto max-w-xl">
       {/* Hero */}
       <header className="px-4 pt-4">
-        <div className="relative overflow-hidden rounded-[26px] bg-brand-gradient p-5 text-white shadow-glow">
-          <div className="pointer-events-none absolute -right-10 -top-16 h-44 w-44 rounded-full bg-white/15 blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-20 -left-10 h-40 w-40 rounded-full bg-fuchsia-300/20 blur-2xl" />
-          <div className="relative flex items-start justify-between">
-            <div>
-              <p className="text-[13px] font-medium text-white/75">{greeting()},</p>
-              <h1 className="mt-0.5 font-display text-[26px] font-extrabold leading-tight tracking-tight">{firstName} 👋</h1>
-              <p className="mt-1 text-[13px] text-white/80">
-                {summary ? (
-                  summary.active ? (
-                    <>
-                      Sizda <b className="font-bold text-white">{summary.active}</b> ta faol lid bor
-                    </>
-                  ) : (
-                    'Barcha lidlar ishlangan — zo\'r! 🎉'
-                  )
-                ) : (
-                  ' '
-                )}
-              </p>
+        <div className="relative overflow-hidden rounded-[26px] bg-[#0f1222] p-4 text-white shadow-lift ring-1 ring-white/10">
+          {/* Yumshoq nur va nuqtali fon */}
+          <div className="pointer-events-none absolute -right-20 -top-24 h-60 w-60 rounded-full bg-[#5b5bf6]/30 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-28 -left-20 h-56 w-56 rounded-full bg-[#14b8a6]/[0.12] blur-3xl" />
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.05]"
+            style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.9) 1px, transparent 1px)', backgroundSize: '14px 14px' }}
+          />
+
+          <div className="relative flex items-center gap-3">
+            <Avatar name={employee.fullName} size={44} />
+            <div className="min-w-0 flex-1">
+              <p className="text-[12.5px] font-medium text-white/50">{greeting()}</p>
+              <h1 className="truncate font-display text-[19px] font-bold leading-tight tracking-tight">{employee.fullName}</h1>
             </div>
             <motion.button
               whileTap={{ rotate: 180, scale: 0.9 }}
@@ -86,17 +78,36 @@ export function LeadsPage() {
                 haptic.tap();
                 void query.refetch();
               }}
-              className="rounded-full bg-white/15 p-2.5 backdrop-blur"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.07] text-white/80 ring-1 ring-white/10"
               aria-label="Yangilash"
             >
-              <RefreshCw className={clsx('h-[18px] w-[18px]', query.isRefetching && 'animate-spin')} />
+              <RefreshCw className={clsx('h-[17px] w-[17px]', query.isRefetching && 'animate-spin')} />
             </motion.button>
           </div>
 
-          <div className="relative mt-5 grid grid-cols-3 gap-2">
-            <HeroStat icon={Sparkles} label="Yangi" value={summary?.byStatus.new} onClick={() => setTab('new')} />
-            <HeroStat icon={Bell} label="Bugun eslatma" value={summary?.dueToday} onClick={() => navigate('/reminders')} />
-            <HeroStat icon={Trophy} label="HA dedi" value={summary?.byStatus.success} onClick={() => setTab('success')} />
+          <div className="relative mt-4 flex items-center gap-2 rounded-xl bg-white/[0.05] px-3 py-2 text-[12.5px] ring-1 ring-white/[0.07]">
+            {summary && summary.active > 0 ? (
+              <>
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inset-0 animate-pulse-ring rounded-full bg-amber-400" />
+                  <span className="relative h-2 w-2 rounded-full bg-amber-400" />
+                </span>
+                <span className="text-white/70">
+                  <b className="font-semibold text-white">{summary.active} ta</b> faol lid javobingizni kutmoqda
+                </span>
+              </>
+            ) : (
+              <>
+                <CircleCheckBig className="h-4 w-4 text-emerald-400" />
+                <span className="text-white/70">{summary ? "Barcha lidlar ishlangan — ajoyib natija" : 'Yuklanmoqda…'}</span>
+              </>
+            )}
+          </div>
+
+          <div className="relative mt-3 grid grid-cols-3 gap-2">
+            <HeroStat icon={Sparkles} color="#60a5fa" label="Yangi" value={summary?.byStatus.new} onClick={() => setTab('new')} />
+            <HeroStat icon={Bell} color="#fbbf24" label="Bugun eslatma" value={summary?.dueToday} onClick={() => navigate('/reminders')} />
+            <HeroStat icon={Trophy} color="#4ade80" label="HA dedi" value={summary?.byStatus.success} onClick={() => setTab('success')} />
           </div>
         </div>
 
@@ -181,20 +192,22 @@ export function LeadsPage() {
   );
 }
 
-function HeroStat({ icon: Icon, label, value, onClick }: { icon: typeof Bell; label: string; value?: number; onClick: () => void }) {
+function HeroStat({ icon: Icon, label, value, color, onClick }: { icon: typeof Bell; label: string; value?: number; color: string; onClick: () => void }) {
   return (
     <motion.button
-      whileTap={{ scale: 0.95 }}
+      whileTap={{ scale: 0.96 }}
       transition={spring}
       onClick={() => {
         haptic.tap();
         onClick();
       }}
-      className="flex flex-col items-start rounded-2xl bg-white/15 p-3 text-left ring-1 ring-inset ring-white/20 backdrop-blur-md"
+      className="flex flex-col items-start rounded-2xl bg-white/[0.05] p-3 text-left ring-1 ring-white/[0.08] transition-colors active:bg-white/[0.09]"
     >
-      <Icon className="h-4 w-4 text-white/80" />
-      <span className="mt-2 font-display text-[24px] font-extrabold leading-none">{value === undefined ? '–' : <AnimatedNumber value={value} />}</span>
-      <span className="mt-1 text-[11px] font-medium text-white/75">{label}</span>
+      <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ backgroundColor: `${color}26`, color }}>
+        <Icon className="h-[15px] w-[15px]" strokeWidth={2.3} />
+      </span>
+      <span className="mt-2.5 font-display text-[24px] font-bold leading-none tracking-tight">{value === undefined ? '–' : <AnimatedNumber value={value} />}</span>
+      <span className="mt-1 text-[11px] font-medium text-white/50">{label}</span>
     </motion.button>
   );
 }
