@@ -1,0 +1,12 @@
+services:
+  lidex:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    ports:
+      - "4000:4000"
+    # Firestore kaliti fayl ko'rinishida bo'lsa (.env: FIREBASE_SERVICE_ACCOUNT_PATH=/secrets/firebase.json):
+    # volumes:
+    #   - ./firebase-service-account.json:/secrets/firebase.json:ro

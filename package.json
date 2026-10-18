@@ -1,0 +1,63 @@
+{
+  "name": "lidex",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Lidex — Telegram guruhlardan lidlarni yig'ish, xodimlarga taqsimlash va nazorat qilish tizimi (Telegram Mini App + Admin panel)",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n server,web -c cyan,magenta \"cd server && tsx watch --clear-screen=false src/index.ts\" \"cd web && vite\"",
+    "dev:server": "cd server && tsx watch --clear-screen=false src/index.ts",
+    "dev:web": "cd web && vite",
+    "build": "cd web && vite build && cd .. && node scripts/build-server.mjs",
+    "start": "node server/dist/index.js",
+    "typecheck": "tsc -p server --noEmit && tsc -p web --noEmit",
+    "seed:demo": "cd server && tsx src/scripts/seed-demo.ts",
+    "userbot:login": "cd server && tsx src/userbot/login.ts",
+    "test": "node scripts/test.mjs",
+    "firestore:indexes": "firebase deploy --only firestore:indexes"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5",
+    "bcryptjs": "^3",
+    "clsx": "^2.1.1",
+    "cookie": "^1",
+    "cookie-parser": "^1",
+    "dotenv": "^16",
+    "express": "^5",
+    "express-rate-limit": "^7",
+    "firebase-admin": "^13",
+    "grammy": "^1",
+    "helmet": "^8",
+    "jsonwebtoken": "^9",
+    "lucide-react": "^1.59.0",
+    "pino": "^9",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-router-dom": "^6",
+    "socket.io": "^4",
+    "socket.io-client": "^4",
+    "telegram": "^2",
+    "zod": "^3"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1",
+    "@types/express": "^5",
+    "@types/jsonwebtoken": "^9",
+    "@types/node": "^22",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@vitejs/plugin-react": "^4",
+    "autoprefixer": "^10",
+    "concurrently": "^9",
+    "esbuild": "^0.25",
+    "pino-pretty": "^13",
+    "postcss": "^8",
+    "tailwindcss": "^3",
+    "tsx": "^4",
+    "typescript": "^5",
+    "vite": "^6"
+  }
+}

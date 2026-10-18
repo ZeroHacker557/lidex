@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------- Admin panel mavzusi ---------- */
+body.admin {
+  --c-bg: #f6f7fb;
+  --c-surface: #ffffff;
+  --c-surface-2: #f1f3f8;
+  --c-fg: #0f172a;
+  --c-muted: #64748b;
+  --c-line: #e5e7ef;
+  --c-brand: #4f46e5;
+  --c-brand-fg: #ffffff;
+  --c-danger: #dc2626;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  body.admin:not(.light) {
+    --c-bg: #0b0f19;
+    --c-surface: #121826;
+    --c-surface-2: #1a2132;
+    --c-fg: #e5e9f2;
+    --c-muted: #8b95a9;
+    --c-line: #252d40;
+    --c-brand: #818cf8;
+    --c-brand-fg: #0b0f19;
+    --c-danger: #f87171;
+    color-scheme: dark;
+  }
+}
+body.admin.dark {
+  --c-bg: #0b0f19;
+  --c-surface: #121826;
+  --c-surface-2: #1a2132;
+  --c-fg: #e5e9f2;
+  --c-muted: #8b95a9;
+  --c-line: #252d40;
+  --c-brand: #818cf8;
+  --c-brand-fg: #0b0f19;
+  --c-danger: #f87171;
+  color-scheme: dark;
+}
+
+/* ---------- Mini App: Telegram mavzu ranglari ---------- */
+body.miniapp {
+  --c-bg: var(--tg-theme-secondary-bg-color, #f1f2f6);
+  --c-surface: var(--tg-theme-section-bg-color, var(--tg-theme-bg-color, #ffffff));
+  --c-surface-2: var(--tg-theme-secondary-bg-color, #f1f2f6);
+  --c-fg: var(--tg-theme-text-color, #0f172a);
+  --c-muted: var(--tg-theme-hint-color, #8a94a6);
+  --c-line: color-mix(in srgb, var(--tg-theme-hint-color, #8a94a6) 22%, transparent);
+  --c-brand: var(--tg-theme-button-color, #2481cc);
+  --c-brand-fg: var(--tg-theme-button-text-color, #ffffff);
+  --c-danger: var(--tg-theme-destructive-text-color, #e53935);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  user-select: none;
+}
+body.miniapp input,
+body.miniapp textarea,
+body.miniapp .selectable {
+  user-select: text;
+}
+
+html,
+body {
+  background: var(--c-bg);
+  color: var(--c-fg);
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 0px);
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-[15px] text-fg outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/20;
+  }
+  .label {
+    @apply mb-1.5 block text-[13px] font-medium text-muted;
+  }
+  .card {
+    @apply rounded-2xl border border-line bg-surface;
+  }
+}
