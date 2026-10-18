@@ -71,4 +71,5 @@ export const COL = {
   events: 'events',
   messages: 'messages',
   counters: 'counters',
+  inbox: 'inbox',
 } as const;

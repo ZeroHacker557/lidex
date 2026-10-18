@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { COL, db, setStore, type Employee, type Group, type Lead, type LeadEvent, type WithId } from '../db/index.js';
+import { COL, db, setStore, type Employee, type Group, type InboxItem, type Lead, type LeadEvent, type WithId } from '../db/index.js';
 import { MemoryStore } from '../db/memory.js';
 import { addDays, addMinutes } from '../lib/time.js';
 import { processReminders, processSla } from '../scheduler/index.js';
 import { invalidateGroups, newGroup } from './groups.js';
+import { inboxId, processPendingInbox, receiveGroupMessage } from './inbox.js';
 import { changeStatus, ingestLead, reassignLead } from './leads.js';
 
 setStore(new MemoryStore(null));
@@ -95,4 +96,43 @@ test("lid oqimi: taqsimlash, takror, status, eslatma, SLA", async () => {
 
   const emp = (await db().get<Employee>(COL.employees, a)) as WithId<Employee>;
   assert.equal(emp.fullName, 'Ali');
+});
+
+test("inbox: baza vaqtincha ishlamasa lid yo'qolmaydi, scheduler tiklaydi", async () => {
+  const store = db();
+  const gid = await store.create(COL.groups, newGroup({ title: 'Inbox test', chatId: -1002, chatType: 'supergroup', status: 'active' }));
+  invalidateGroups();
+  await store.create(COL.employees, employee('Inbox xodim', [gid], 77, new Date('2026-01-01')));
+  const group = (await store.get<Group>(COL.groups, gid))!;
+
+  // Lid yaratish (tranzaksiya) vaqtida "internet uziladi"
+  const original = store.runTransaction.bind(store);
+  store.runTransaction = (() => Promise.reject(new Error('14 UNAVAILABLE: No connection established'))) as typeof store.runTransaction;
+  await receiveGroupMessage({
+    group, chatId: -1002, messageId: 10, from: '@lead_bot', messageDate: new Date(),
+    text: '🧾 Nomi: Forma\n    1. Full name: Tiklangan Mijoz\n    2. Phone number: +998901112299',
+  });
+  store.runTransaction = original;
+
+  const failed = (await store.get<InboxItem>(COL.inbox, inboxId(-1002, 10)))!;
+  assert.equal(failed.status, 'failed');
+  assert.equal((await store.query<Lead>(COL.leads, { where: [['groupId', '==', gid]] })).length, 0);
+
+  // 1 daqiqadan keyin scheduler qayta urinadi
+  await store.update(COL.inbox, failed.id, { createdAt: new Date(Date.now() - 120_000) });
+  assert.equal(await processPendingInbox(), 1);
+  const leads = await store.query<Lead>(COL.leads, { where: [['groupId', '==', gid]] });
+  assert.equal(leads.length, 1);
+  assert.equal(leads[0]!.name, 'Tiklangan Mijoz');
+  assert.equal((await store.get<InboxItem>(COL.inbox, failed.id))!.status, 'lead');
+
+  // Telefonsiz xabar — sababi bilan saqlanadi
+  await receiveGroupMessage({ group, chatId: -1002, messageId: 11, from: '@x', messageDate: new Date(), text: 'Salom, bugun yig\'ilish bor' });
+  const skipped = (await store.get<InboxItem>(COL.inbox, inboxId(-1002, 11)))!;
+  assert.equal(skipped.status, 'skipped');
+  assert.equal(skipped.reason, 'no_phone');
+
+  // Xuddi shu xabar qayta kelsa (Telegram qayta yuborishi) — ikkinchi lid yaratilmaydi
+  await receiveGroupMessage({ group, chatId: -1002, messageId: 10, from: '@lead_bot', messageDate: new Date(), text: 'Full name: Tiklangan Mijoz\nPhone number: +998901112299' });
+  assert.equal((await store.query<Lead>(COL.leads, { where: [['groupId', '==', gid]] })).length, 1);
 });

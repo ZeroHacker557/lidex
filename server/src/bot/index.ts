@@ -9,7 +9,8 @@ import { startOfLocalDay } from '../lib/time.js';
 import { logger } from '../logger.js';
 import { bindEmployeeByKey, findEmployeeByTelegram, KeyError } from '../services/employees.js';
 import { groupByChatId, migrateChat, registerChat } from '../services/groups.js';
-import { changeStatus, ingestLead, tomorrowAtReminderHour } from '../services/leads.js';
+import { receiveGroupMessage, withRetry } from '../services/inbox.js';
+import { changeStatus, tomorrowAtReminderHour } from '../services/leads.js';
 import { markMessageRead } from '../services/messages.js';
 import { bot, botInfo } from './instance.js';
 import { esc, leadCard, leadKeyboard, panelKeyboard, STATUS_CODES, TEXT } from './texts.js';
@@ -28,24 +29,32 @@ function messageText(msg: Message): string {
   return parts.join('\n').trim();
 }
 
-async function handleChatMessage(ctx: Context, msg: Message) {
+async function handleChatMessage(ctx: Context, msg: Message, isEdit = false) {
   const chat = msg.chat;
   if (msg.from?.id === ctx.me.id) return;
   const text = messageText(msg);
   if (!text || text.startsWith('/')) return;
 
-  let group = await groupByChatId(chat.id);
-  if (!group) group = await registerChat({ id: chat.id, title: 'title' in chat ? chat.title : undefined, type: chat.type });
-  if (group.status !== 'active') return;
+  // Guruhni topish/ro'yxatga olish ham internet talab qiladi — vaqtincha uzilishda qayta urinamiz
+  let group = await withRetry(() => groupByChatId(chat.id), "Guruhni o'qish");
+  if (!group) {
+    group = await withRetry(
+      () => registerChat({ id: chat.id, title: 'title' in chat ? chat.title : undefined, type: chat.type }),
+      "Guruhni ro'yxatga olish",
+    );
+  }
   if (group.settings.ingestVia === 'userbot' && config.USERBOT_ENABLED) return; // userbot o'qiydi
 
-  await ingestLead({
+  const from = msg.from ? (msg.from.username ? `@${msg.from.username}` : [msg.from.first_name, msg.from.last_name].filter(Boolean).join(' ')) : null;
+  await receiveGroupMessage({
     group,
-    source: 'telegram',
-    text,
     chatId: chat.id,
     messageId: msg.message_id,
+    text,
+    from,
     telegramUsername: msg.forward_origin?.type === 'user' ? (msg.forward_origin.sender_user.username ?? null) : null,
+    isEdit,
+    messageDate: new Date((msg.edit_date ?? msg.date) * 1000),
   });
 }
 
@@ -147,15 +156,19 @@ export function setupBot() {
     const post = ctx.channelPost;
     const text = messageText(post);
     if (!text) return;
-    let group = await groupByChatId(post.chat.id);
-    if (!group) group = await registerChat({ id: post.chat.id, title: post.chat.title, type: 'channel' });
-    if (group.status !== 'active') return;
-    await ingestLead({ group, source: 'telegram', text, chatId: post.chat.id, messageId: post.message_id });
+    let group = await withRetry(() => groupByChatId(post.chat.id), "Kanalni o'qish");
+    if (!group) group = await withRetry(() => registerChat({ id: post.chat.id, title: post.chat.title, type: 'channel' }), "Kanalni ro'yxatga olish");
+    await receiveGroupMessage({ group, chatId: post.chat.id, messageId: post.message_id, text, from: post.chat.title, messageDate: new Date(post.date * 1000) });
   });
 
   bot.on('message', async (ctx, next) => {
     if (isGroupChat(ctx)) return handleChatMessage(ctx, ctx.message);
     return next();
+  });
+
+  // Lid xabari keyin tahrirlansa (avval qisqa, keyin to'liq matn) — hali lid bo'lmagan bo'lsa qayta tekshiriladi
+  bot.on('edited_message', async (ctx) => {
+    if (isGroupChat(ctx)) await handleChatMessage(ctx, ctx.editedMessage, true);
   });
 
   // ---------- Shaxsiy chat (xodimlar) ----------
@@ -314,7 +327,8 @@ async function runPolling(): Promise<void> {
       // 409: boshqa joyda (Vercel) webhook o'rnatilgan — uni olib tashlab qayta urinamiz
       const conflict = err instanceof GrammyError && err.error_code === 409;
       logger.warn({ err: err instanceof Error ? err.message : err }, conflict ? 'Webhook bilan to\'qnashuv — qayta ulanmoqda' : 'Bot polling uzildi — qayta ulanmoqda');
-      await new Promise((r) => setTimeout(r, 3000));
+      // Webhook bilan to'qnashuvda Vercel'ga yo'l beramiz (2 daqiqa) — bir-biridan tortib olish bo'lmasin
+      await new Promise((r) => setTimeout(r, conflict ? 120_000 : 3000));
     }
   }
 }

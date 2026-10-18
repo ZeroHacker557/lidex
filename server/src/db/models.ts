@@ -124,6 +124,29 @@ export interface LeadEvent {
 
 export type MessageType = 'info' | 'warning';
 
+/** Guruhga tushgan xabar va uni qayta ishlash natijasi */
+export type InboxStatus = 'pending' | 'lead' | 'skipped' | 'failed';
+
+export interface InboxItem {
+  groupId: string;
+  groupTitle: string;
+  chatId: number;
+  messageId: number;
+  text: string;
+  from: string | null;
+  telegramUsername: string | null;
+  isEdit: boolean;
+  status: InboxStatus;
+  /** skipped/failed sababi: no_phone, group_inactive yoki xato matni */
+  reason: string | null;
+  leadId: string | null;
+  leadSeq: number | null;
+  attempts: number;
+  messageDate: Date;
+  createdAt: Date;
+  processedAt: Date | null;
+}
+
 export interface StaffMessage {
   adminId: string;
   adminName: string;

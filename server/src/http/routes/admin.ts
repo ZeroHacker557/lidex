@@ -11,6 +11,7 @@ import {
   type Employee,
   type Filter,
   type Group,
+  type InboxItem,
   type Lead,
   type LeadEvent,
   type StaffMessage,
@@ -32,6 +33,7 @@ import {
   setFlag,
   toLeadDto,
 } from '../../services/leads.js';
+import { forceIngestInbox } from '../../services/inbox.js';
 import { sendStaffMessage } from '../../services/messages.js';
 import { emitToAdmins, emitToEmployee, onlineEmployeeIds } from '../../services/realtime.js';
 import { dashboard, employeeStats, leadsCsv, scopeFilter } from '../../services/stats.js';
@@ -492,6 +494,27 @@ adminRouter.post('/groups/:id/test-lead', async (req, res) => {
   if (!group) throw notFound('Guruh topilmadi');
   const result = await ingestLead({ group, source: 'manual', text, actor: adminActor(req) });
   res.json({ lead: result ? toLeadDto(result.lead) : null });
+});
+
+/** Guruhga tushgan xabarlar va ularning natijasi (lid bo'ldimi, nega bo'lmadi) */
+adminRouter.get('/groups/:id/inbox', async (req, res) => {
+  assertGroupAccess(req.admin!, String(req.params.id));
+  const { status } = z.object({ status: z.enum(['lead', 'skipped', 'failed', 'pending']).optional() }).parse(req.query);
+  const where: Filter[] = [['groupId', '==', String(req.params.id)]];
+  if (status) where.push(['status', '==', status]);
+  const items = await db().query<InboxItem>(COL.inbox, { where, orderBy: [['createdAt', 'desc']], limit: 50 });
+  res.json({ items });
+});
+
+/** Lid deb topilmagan xabarni qo'lda lid qilish (ism/telefonni to'ldirib) */
+adminRouter.post('/inbox/:id/ingest', async (req, res) => {
+  const item = await db().get<InboxItem>(COL.inbox, String(req.params.id));
+  if (!item) throw notFound('Xabar topilmadi');
+  assertGroupAccess(req.admin!, item.groupId);
+  const body = z.object({ name: z.string().max(120).nullable().optional(), phone: z.string().max(40).nullable().optional() }).parse(req.body ?? {});
+  const lead = await forceIngestInbox(item.id, body);
+  if (!lead) throw badRequest("Lid yaratilmadi: ism yoki telefonni kiriting");
+  res.json({ lead });
 });
 
 adminRouter.delete('/groups/:id', requireSuperadmin, async (req, res) => {

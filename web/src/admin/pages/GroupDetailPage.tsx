@@ -8,6 +8,7 @@ import { Avatar, Button, ErrorBox, FullScreenLoader, StatusBadge, errorText, use
 import { api } from '../api';
 import { Card, CopyField, Field, Select, Toggle, useOpenLead } from '../components/common';
 import { useAdmin, useEmployees } from '../context';
+import { InboxCard } from '../components/InboxCard';
 import { groupStatusBadge } from './GroupsPage';
 
 interface Detail {
@@ -239,6 +240,8 @@ Content-Type: application/json
           )}
         </Card>
       </div>
+
+      <InboxCard groupId={group.id} />
     </div>
   );
 }

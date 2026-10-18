@@ -144,3 +144,22 @@ export interface Paged<T> {
   items: T[];
   nextCursor: string | null;
 }
+
+export interface InboxItem {
+  id: string;
+  groupId: string;
+  groupTitle: string;
+  chatId: number;
+  messageId: number;
+  text: string;
+  from: string | null;
+  isEdit: boolean;
+  status: 'pending' | 'lead' | 'skipped' | 'failed';
+  reason: string | null;
+  leadId: string | null;
+  leadSeq: number | null;
+  attempts: number;
+  messageDate: string;
+  createdAt: string;
+  processedAt: string | null;
+}
