@@ -25,6 +25,8 @@ interface TgWebApp {
   openTelegramLink(url: string): void;
   openLink(url: string): void;
   showConfirm?(msg: string, cb: (ok: boolean) => void): void;
+  onEvent?(event: string, cb: () => void): void;
+  setBottomBarColor?(c: string): void;
   BackButton: TgButton;
   HapticFeedback?: {
     impactOccurred(style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft'): void;
@@ -43,13 +45,33 @@ export const tg: TgWebApp | null = window.Telegram?.WebApp?.initData !== undefin
 
 export const insideTelegram = !!tg?.initData;
 
+const BG = { light: '#f4f5f9', dark: '#0a0c13' } as const;
+
+/** Telegram yorug'/qorong'i rejimiga moslashish: o'z dizayn tokenlarimiz + Telegram sarlavha rangi */
+const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+function applyTheme() {
+  // Telegram'dan tashqarida SDK har doim "light" qaytaradi — u holda tizim sozlamasiga qaraymiz
+  const scheme = tg?.initData ? tg.colorScheme : darkQuery.matches ? 'dark' : 'light';
+  document.documentElement.dataset.theme = scheme;
+  try {
+    tg?.setHeaderColor?.(BG[scheme]);
+    tg?.setBackgroundColor?.(BG[scheme]);
+    if (tg?.isVersionAtLeast?.('7.10')) tg.setBottomBarColor?.(BG[scheme]);
+  } catch {
+    /* eski versiyalar */
+  }
+}
+
 export function initTelegram() {
+  applyTheme();
+  darkQuery.addEventListener('change', applyTheme);
   if (!tg) return;
   tg.ready();
   tg.expand();
+  tg.onEvent?.('themeChanged', applyTheme);
   try {
     if (tg.isVersionAtLeast?.('7.7')) tg.disableVerticalSwipes?.();
-    tg.setHeaderColor?.('secondary_bg_color');
   } catch {
     /* eski versiyalar */
   }

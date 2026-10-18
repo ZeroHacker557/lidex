@@ -1,4 +1,4 @@
-// Mavzu tokenlari (index.css da CSS o'zgaruvchilar; Mini App'da Telegram ranglariga bog'langan).
+// Mavzu tokenlari index.css da CSS o'zgaruvchilar sifatida (yorug' / qorong'i).
 // color-mix — `bg-brand/10` kabi shaffoflik modifikatorlari ishlashi uchun.
 const token = (name) => `color-mix(in srgb, var(--c-${name}) calc(<alpha-value> * 100%), transparent)`;
 
@@ -11,31 +11,46 @@ export default {
         bg: token('bg'),
         surface: token('surface'),
         'surface-2': token('surface-2'),
+        'surface-3': token('surface-3'),
         fg: token('fg'),
         muted: token('muted'),
         line: token('line'),
         brand: token('brand'),
+        'brand-2': token('brand-2'),
         'brand-fg': token('brand-fg'),
         danger: token('danger'),
+        warn: token('warn'),
+        good: token('good'),
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['"Inter Variable"', 'Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        display: ['"Manrope Variable"', 'Manrope', '"Inter Variable"', 'system-ui', 'sans-serif'],
+      },
+      fontSize: {
+        '2xs': ['11px', '14px'],
+      },
+      borderRadius: {
+        '4xl': '2rem',
       },
       boxShadow: {
-        card: '0 1px 2px rgb(0 0 0 / 0.04), 0 1px 8px rgb(0 0 0 / 0.04)',
-        pop: '0 10px 40px rgb(0 0 0 / 0.18)',
+        soft: '0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.04)',
+        card: '0 1px 2px rgb(16 24 40 / 0.04), 0 4px 16px -4px rgb(16 24 40 / 0.08)',
+        lift: '0 2px 4px rgb(16 24 40 / 0.04), 0 12px 32px -8px rgb(16 24 40 / 0.16)',
+        pop: '0 24px 64px -12px rgb(16 24 40 / 0.35)',
+        glow: '0 8px 24px -6px color-mix(in srgb, var(--c-brand) 55%, transparent)',
+      },
+      backgroundImage: {
+        'brand-gradient': 'linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-2) 100%)',
       },
       keyframes: {
-        'slide-up': { from: { transform: 'translateY(100%)' }, to: { transform: 'translateY(0)' } },
-        'fade-in': { from: { opacity: '0' }, to: { opacity: '1' } },
-        'slide-in-right': { from: { transform: 'translateX(100%)' }, to: { transform: 'translateX(0)' } },
-        pulse2: { '0%,100%': { opacity: '1' }, '50%': { opacity: '.4' } },
+        shimmer: { '100%': { transform: 'translateX(100%)' } },
+        'pulse-ring': { '0%': { transform: 'scale(.8)', opacity: '.6' }, '100%': { transform: 'scale(2.2)', opacity: '0' } },
+        float: { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-8px)' } },
       },
       animation: {
-        'slide-up': 'slide-up .22s cubic-bezier(.2,.8,.2,1)',
-        'fade-in': 'fade-in .15s ease-out',
-        'slide-in-right': 'slide-in-right .22s cubic-bezier(.2,.8,.2,1)',
-        pulse2: 'pulse2 1.6s ease-in-out infinite',
+        shimmer: 'shimmer 1.6s infinite',
+        'pulse-ring': 'pulse-ring 1.8s cubic-bezier(.2,.6,.4,1) infinite',
+        float: 'float 6s ease-in-out infinite',
       },
     },
   },

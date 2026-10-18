@@ -1,13 +1,16 @@
 import clsx from 'clsx';
-import { useCallback, type ReactNode, type SelectHTMLAttributes } from 'react';
+import { motion } from 'framer-motion';
+import { Check, ChevronDown, Copy, type LucideIcon } from 'lucide-react';
+import { useCallback, useState, type ReactNode, type SelectHTMLAttributes } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { AnimatedNumber, ease, spring } from '../../shared/motion';
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-[22px] font-bold tracking-tight">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
+        <h1 className="font-display text-[28px] font-extrabold leading-tight tracking-tight">{title}</h1>
+        {subtitle && <p className="mt-1 text-[14px] text-muted">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
@@ -16,9 +19,12 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
 
 export function Select({ className, children, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select {...rest} className={clsx('input h-10 cursor-pointer py-0 pr-8 text-sm', className)}>
-      {children}
-    </select>
+    <div className={clsx('relative', className)}>
+      <select {...rest} className="input h-10 w-full cursor-pointer appearance-none py-0 pr-9 text-[13.5px] font-medium shadow-soft">
+        {children}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+    </div>
   );
 }
 
@@ -27,7 +33,7 @@ export function Field({ label, hint, children }: { label: string; hint?: ReactNo
     <label className="block">
       <span className="label">{label}</span>
       {children}
-      {hint && <span className="mt-1 block text-[12px] text-muted">{hint}</span>}
+      {hint && <span className="mt-1.5 block text-[12px] leading-snug text-muted">{hint}</span>}
     </label>
   );
 }
@@ -40,51 +46,157 @@ export function Toggle({ checked, onChange, disabled }: { checked: boolean; onCh
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={clsx('relative h-6 w-11 shrink-0 rounded-full transition disabled:opacity-50', checked ? 'bg-brand' : 'bg-line')}
+      className={clsx('flex h-6 w-11 shrink-0 rounded-full p-0.5 transition-colors disabled:opacity-50', checked ? 'bg-brand' : 'bg-surface-3')}
     >
-      <span className={clsx('absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition', checked ? 'left-[22px]' : 'left-0.5')} />
+      <motion.span layout transition={spring} className={clsx('h-5 w-5 rounded-full bg-white shadow-soft', checked && 'ml-auto')} />
     </button>
   );
 }
 
-export function Card({ title, actions, children, className, pad = true }: { title?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string; pad?: boolean }) {
+export function Card({
+  title,
+  icon,
+  actions,
+  children,
+  className,
+  pad = true,
+  delay = 0,
+}: {
+  title?: ReactNode;
+  icon?: LucideIcon;
+  actions?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  pad?: boolean;
+  delay?: number;
+}) {
+  const Icon = icon;
   return (
-    <section className={clsx('card shadow-card', className)}>
+    <motion.section
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease, delay }}
+      className={clsx('card overflow-hidden shadow-card', className)}
+    >
       {title && (
-        <div className="flex items-center justify-between gap-2 border-b border-line px-5 py-3.5">
-          <h2 className="text-[15px] font-semibold">{title}</h2>
+        <div className="flex items-center justify-between gap-2 border-b border-line/60 px-5 py-4">
+          <h2 className="flex items-center gap-2.5 font-display text-[15.5px] font-bold">
+            {Icon && (
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                <Icon className="h-4 w-4" />
+              </span>
+            )}
+            {title}
+          </h2>
           {actions}
         </div>
       )}
       <div className={pad ? 'p-5' : ''}>{children}</div>
-    </section>
+    </motion.section>
   );
 }
 
-export function KpiTile({ label, value, sub, tone }: { label: string; value: ReactNode; sub?: ReactNode; tone?: 'danger' | 'warning' | 'good' }) {
+const TONE = {
+  brand: { fg: 'var(--c-brand)', bg: 'color-mix(in srgb, var(--c-brand) 12%, transparent)' },
+  good: { fg: '#16a34a', bg: '#16a34a1a' },
+  warning: { fg: '#d97706', bg: '#f59e0b1f' },
+  danger: { fg: '#dc2626', bg: '#ef44441a' },
+  info: { fg: '#0284c7', bg: '#0ea5e91a' },
+  violet: { fg: '#7c3aed', bg: '#8b5cf61a' },
+};
+
+export function KpiTile({
+  label,
+  value,
+  sub,
+  tone = 'brand',
+  icon: Icon,
+  delay = 0,
+  suffix,
+}: {
+  label: string;
+  value: number | string;
+  sub?: ReactNode;
+  tone?: keyof typeof TONE;
+  icon?: LucideIcon;
+  delay?: number;
+  suffix?: string;
+}) {
+  const t = TONE[tone];
   return (
-    <div className="card p-4 shadow-card">
-      <p className="text-[13px] text-muted">{label}</p>
-      <p
-        className={clsx(
-          'mt-1.5 text-[26px] font-semibold leading-none tabular-nums',
-          tone === 'danger' && 'text-red-600',
-          tone === 'warning' && 'text-amber-600',
-          tone === 'good' && 'text-emerald-600',
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease, delay }}
+      whileHover={{ y: -2 }}
+      className="card relative overflow-hidden p-4 shadow-card"
+    >
+      <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-60 blur-2xl" style={{ backgroundColor: t.bg }} />
+      <div className="relative flex items-start justify-between gap-2">
+        <p className="text-[12.5px] font-semibold text-muted">{label}</p>
+        {Icon && (
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ backgroundColor: t.bg, color: t.fg }}>
+            <Icon className="h-4 w-4" strokeWidth={2.3} />
+          </span>
         )}
-      >
-        {value}
+      </div>
+      <p className="relative mt-2 font-display text-[28px] font-extrabold leading-none tracking-tight">
+        {typeof value === 'number' ? <AnimatedNumber value={value} /> : value}
+        {suffix}
       </p>
-      {sub && <p className="mt-1.5 text-[12px] text-muted">{sub}</p>}
-    </div>
+      {sub && <p className="relative mt-2 text-[12px] text-muted">{sub}</p>}
+    </motion.div>
   );
 }
 
 export function Th({ children, className }: { children?: ReactNode; className?: string }) {
-  return <th className={clsx('whitespace-nowrap px-4 py-2.5 text-left text-[12px] font-medium text-muted', className)}>{children}</th>;
+  return <th className={clsx('whitespace-nowrap px-4 py-3 text-left text-[11.5px] font-bold uppercase tracking-wide text-muted', className)}>{children}</th>;
 }
 export function Td({ children, className }: { children?: ReactNode; className?: string }) {
-  return <td className={clsx('px-4 py-3 align-middle', className)}>{children}</td>;
+  return <td className={clsx('px-4 py-3.5 align-middle', className)}>{children}</td>;
+}
+
+/** Jadval satri — ketma-ket paydo bo'ladi */
+export function Tr({ children, onClick, index = 0, className }: { children: ReactNode; onClick?: () => void; index?: number; className?: string }) {
+  return (
+    <motion.tr
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.25, delay: Math.min(index, 15) * 0.02 }}
+      onClick={onClick}
+      className={clsx('transition-colors', onClick && 'cursor-pointer hover:bg-surface-2/70', className)}
+    >
+      {children}
+    </motion.tr>
+  );
+}
+
+/** Segmentli tanlov (tugmalar guruhi) */
+export function Segmented<T extends string | number>({
+  value,
+  onChange,
+  options,
+  id,
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: Array<{ value: T; label: string }>;
+  id: string;
+}) {
+  return (
+    <div className="flex rounded-xl bg-surface p-1 shadow-soft ring-1 ring-line/70">
+      {options.map((o) => (
+        <button
+          key={String(o.value)}
+          onClick={() => onChange(o.value)}
+          className={clsx('relative rounded-lg px-3.5 py-1.5 text-[13px] font-semibold transition-colors', value === o.value ? 'text-white' : 'text-muted hover:text-fg')}
+        >
+          {value === o.value && <motion.span layoutId={`seg-${id}`} transition={spring} className="absolute inset-0 rounded-lg bg-brand-gradient shadow-glow" />}
+          <span className="relative">{o.label}</span>
+        </button>
+      ))}
+    </div>
+  );
 }
 
 /** Istalgan sahifadan lid kartasini (drawer) ochish: ?lead=ID */
@@ -102,18 +214,28 @@ export function useOpenLead() {
 }
 
 export function CopyField({ value, onCopy }: { value: string; onCopy?: () => void }) {
+  const [copied, setCopied] = useState(false);
   return (
     <div className="flex items-center gap-2">
-      <code className="min-w-0 flex-1 truncate rounded-lg bg-surface-2 px-3 py-2 font-mono text-[13px]">{value}</code>
-      <button
+      <code className="min-w-0 flex-1 truncate rounded-xl bg-surface-2 px-3.5 py-2.5 font-mono text-[13px] ring-1 ring-line/60">{value}</code>
+      <motion.button
+        whileTap={{ scale: 0.94 }}
         type="button"
-        className="rounded-lg border border-line px-3 py-2 text-[13px] font-medium hover:bg-surface-2"
+        className={clsx(
+          'flex h-10 items-center gap-1.5 rounded-xl px-3.5 text-[13px] font-semibold ring-1 transition-colors',
+          copied ? 'bg-emerald-500/10 text-good ring-emerald-500/30' : 'bg-surface ring-line hover:bg-surface-2',
+        )}
         onClick={() => {
-          void navigator.clipboard.writeText(value).then(() => onCopy?.());
+          void navigator.clipboard.writeText(value).then(() => {
+            setCopied(true);
+            onCopy?.();
+            setTimeout(() => setCopied(false), 1600);
+          });
         }}
       >
-        Nusxa
-      </button>
+        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+        {copied ? 'Olindi' : 'Nusxa'}
+      </motion.button>
     </div>
   );
 }

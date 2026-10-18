@@ -42,7 +42,7 @@ export function AdminsPage() {
           </div>
         ) : (
           <table className="w-full text-[14px]">
-            <thead className="border-b border-line bg-surface-2/50">
+            <thead className="bg-surface-2/50">
               <tr>
                 <Th>Admin</Th>
                 <Th>Rol</Th>
@@ -52,7 +52,7 @@ export function AdminsPage() {
                 <Th>Faol</Th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y divide-line/60">
               {q.data?.items.map((a) => (
                 <tr key={a.id} className="hover:bg-surface-2">
                   <Td>

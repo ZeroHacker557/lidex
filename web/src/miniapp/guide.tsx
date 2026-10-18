@@ -1,8 +1,17 @@
+import { BellRing, Clock3, Palette, PencilLine, Rocket, Zap, type LucideIcon } from 'lucide-react';
 import { STATUS_META, type LeadStatus } from '@shared/statuses';
 import type { ReactNode } from 'react';
+import { STATUS_ICON } from '../shared/statusIcons';
+
+function StatusIconInline({ status }: { status: LeadStatus }) {
+  const Icon = STATUS_ICON[status];
+  return <Icon className="h-4 w-4" strokeWidth={2.4} />;
+}
 
 export interface GuideStep {
   emoji: string;
+  icon: LucideIcon;
+  color: string;
   title: string;
   body: ReactNode;
 }
@@ -15,8 +24,10 @@ export function StatusLegend() {
       {ORDER.map((s) => {
         const m = STATUS_META[s];
         return (
-          <li key={s} className="flex items-start gap-3 rounded-xl p-2.5" style={{ backgroundColor: `${m.color}14` }}>
-            <span className="mt-1 h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: m.color }} />
+          <li key={s} className="flex items-start gap-3 rounded-2xl p-2.5" style={{ backgroundColor: `${m.color}10` }}>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${m.color}1f`, color: m.color }}>
+              <StatusIconInline status={s} />
+            </span>
             <span>
               <span className="block text-[14px] font-semibold" style={{ color: m.color }}>
                 {m.label}
@@ -34,6 +45,8 @@ export function StatusLegend() {
 export const GUIDE_STEPS: GuideStep[] = [
   {
     emoji: '👋',
+    icon: Rocket,
+    color: '#5b5bf6',
     title: 'Lidex\'ga xush kelibsiz!',
     body: (
       <p>
@@ -44,11 +57,13 @@ export const GUIDE_STEPS: GuideStep[] = [
   },
   {
     emoji: '🔔',
+    icon: BellRing,
+    color: '#0ea5e9',
     title: 'Bildirishnomalar',
     body: (
       <>
         <p>Yangi lid kelishi bilan bot sizga Telegramda xabar yuboradi. Xabar ostidagi tugmalar bilan statusni darhol belgilash mumkin.</p>
-        <p className="mt-2 rounded-xl bg-amber-500/10 p-2.5 text-amber-700">
+        <p className="mt-2 rounded-xl bg-amber-500/10 p-2.5 text-warn">
           ⚠️ Botni <b>ovozsiz qilmang</b> va bloklamang — aks holda eslatmalar va ogohlantirishlar kelmaydi.
         </p>
       </>
@@ -56,11 +71,15 @@ export const GUIDE_STEPS: GuideStep[] = [
   },
   {
     emoji: '🎨',
+    icon: Palette,
+    color: '#a855f7',
     title: 'Statuslar va ranglar',
     body: <StatusLegend />,
   },
   {
     emoji: '⏰',
+    icon: Clock3,
+    color: '#eab308',
     title: 'Keyinga qoldirish va eslatmalar',
     body: (
       <ul className="list-disc space-y-1.5 pl-5">
@@ -79,6 +98,8 @@ export const GUIDE_STEPS: GuideStep[] = [
   },
   {
     emoji: '✏️',
+    icon: PencilLine,
+    color: '#16a34a',
     title: 'Tahrirlash',
     body: (
       <p>
@@ -89,6 +110,8 @@ export const GUIDE_STEPS: GuideStep[] = [
   },
   {
     emoji: '⚡️',
+    icon: Zap,
+    color: '#f97316',
     title: 'Tezlik muhim',
     body: (
       <>

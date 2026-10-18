@@ -63,7 +63,7 @@ export function ActivityPage() {
         {q.isError && <ErrorBox error={q.error} />}
         <div className="overflow-x-auto">
           <table className="w-full text-[14px]">
-            <thead className="border-b border-line bg-surface-2/50">
+            <thead className="bg-surface-2/50">
               <tr>
                 <Th>Vaqt</Th>
                 <Th>Kim</Th>
@@ -72,9 +72,9 @@ export function ActivityPage() {
                 <Th>Izoh</Th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y divide-line/60">
               {items.map((e) => (
-                <tr key={e.id} className="cursor-pointer hover:bg-surface-2" onClick={() => openLead(e.leadId)}>
+                <tr key={e.id} className="cursor-pointer transition-colors hover:bg-surface-2/70" onClick={() => openLead(e.leadId)}>
                   <Td className="whitespace-nowrap tabular-nums text-muted">{fullDate(e.createdAt)}</Td>
                   <Td className="whitespace-nowrap">
                     {e.actorName}

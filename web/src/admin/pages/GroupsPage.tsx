@@ -56,7 +56,7 @@ export function GroupsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {groups.data.map((g) => (
-            <Link key={g.id} to={`/groups/${g.id}`} className="card block p-5 shadow-card transition hover:border-brand/40">
+            <Link key={g.id} to={`/groups/${g.id}`} className="card block p-5 shadow-card transition duration-300 hover:-translate-y-1 hover:border-brand/30 hover:shadow-lift">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h3 className="truncate font-semibold">{g.title}</h3>
@@ -86,7 +86,7 @@ export function GroupsPage() {
 
 function Mini({ label, value, warn }: { label: string; value: number; warn?: boolean }) {
   return (
-    <div className={`rounded-xl px-2 py-2 ${warn ? 'bg-red-500/10 text-red-600' : 'bg-surface-2'}`}>
+    <div className={`rounded-xl px-2 py-2 ${warn ? 'bg-red-500/10 text-danger' : 'bg-surface-2'}`}>
       <p className="text-lg font-semibold tabular-nums">{value}</p>
       <p className="text-[11px] text-muted">{label}</p>
     </div>

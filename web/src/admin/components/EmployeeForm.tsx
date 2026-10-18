@@ -26,7 +26,7 @@ export function KeyModal({ data, name, onClose }: { data: { key: string; deepLin
       }
     >
       <div className="space-y-4">
-        <p className="rounded-xl bg-amber-500/10 px-3 py-2 text-[13px] text-amber-700">
+        <p className="rounded-xl bg-amber-500/10 px-3 py-2 text-[13px] text-warn">
           Kalit faqat <b>hozir</b> ko'rsatiladi (xavfsizlik uchun saqlanmaydi). Yo'qolsa — yangisini yarating.
         </p>
         <Field label="Kalit">
@@ -111,7 +111,7 @@ export function EmployeeFormModal({ employee, onClose }: { employee?: Employee; 
                   onChange={(e) => setGroupIds((s) => (e.target.checked ? [...s, g.id] : s.filter((x) => x !== g.id)))}
                 />
                 {g.title}
-                {g.status === 'pending' && <span className="text-[11px] text-amber-600">(tasdiqlanmagan)</span>}
+                {g.status === 'pending' && <span className="text-[11px] text-warn">(tasdiqlanmagan)</span>}
               </label>
             ))}
             {!selectable.length && <p className="px-2 py-1.5 text-sm text-muted">Avval guruh qo'shing (botni guruhga qo'shing)</p>}

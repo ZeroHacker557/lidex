@@ -53,7 +53,7 @@ export function MessagesPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-[14px]">
-              <thead className="border-b border-line bg-surface-2/50">
+              <thead className="bg-surface-2/50">
                 <tr>
                   <Th>Sana</Th>
                   <Th>Kimga</Th>
@@ -63,7 +63,7 @@ export function MessagesPage() {
                   <Th>Kimdan</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line">
+              <tbody className="divide-y divide-line/60">
                 {q.data.items.map((m) => (
                   <tr key={m.id}>
                     <Td className="whitespace-nowrap text-muted" >

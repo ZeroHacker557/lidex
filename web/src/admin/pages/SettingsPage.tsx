@@ -41,8 +41,8 @@ export function SettingsPage() {
 
   const applyTheme = (t: string) => {
     setTheme(t);
-    document.body.classList.remove('dark', 'light');
-    if (t !== 'system') document.body.classList.add(t);
+    if (t === 'system') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = t;
     try {
       if (t === 'system') localStorage.removeItem('lx_theme');
       else localStorage.setItem('lx_theme', t);
@@ -62,7 +62,7 @@ export function SettingsPage() {
           <div className="mt-4">
             {admin.telegramLinked ? (
               <div className="flex items-center gap-3">
-                <span className="text-[14px] font-medium text-emerald-600">✅ Telegram ulangan</span>
+                <span className="text-[14px] font-medium text-good">✅ Telegram ulangan</span>
                 <Button variant="outline" size="sm" onClick={() => tgUnlink.mutate()}>
                   Uzish
                 </Button>

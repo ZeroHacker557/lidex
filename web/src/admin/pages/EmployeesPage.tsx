@@ -57,7 +57,7 @@ export function EmployeesPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-[14px]">
-              <thead className="border-b border-line bg-surface-2/50">
+              <thead className="bg-surface-2/50">
                 <tr>
                   <Th>Xodim</Th>
                   <Th>Holat</Th>
@@ -67,9 +67,9 @@ export function EmployeesPage() {
                   <Th>Kalit</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line">
+              <tbody className="divide-y divide-line/60">
                 {list.map((e) => (
-                  <tr key={e.id} onClick={() => navigate(`/employees/${e.id}`)} className="cursor-pointer hover:bg-surface-2">
+                  <tr key={e.id} onClick={() => navigate(`/employees/${e.id}`)} className="cursor-pointer transition-colors hover:bg-surface-2/70">
                     <Td>
                       <span className="flex items-center gap-2.5">
                         <Avatar name={e.fullName} online={e.telegramId ? !!e.online : undefined} size={32} />
@@ -110,9 +110,9 @@ export function EmployeesPage() {
 
 export function Badge({ tone, children }: { tone: 'green' | 'amber' | 'red' | 'gray' | 'blue'; children: React.ReactNode }) {
   const cls = {
-    green: 'bg-emerald-500/10 text-emerald-600',
-    amber: 'bg-amber-500/10 text-amber-600',
-    red: 'bg-red-500/10 text-red-600',
+    green: 'bg-emerald-500/10 text-good',
+    amber: 'bg-amber-500/10 text-warn',
+    red: 'bg-red-500/10 text-danger',
     gray: 'bg-surface-2 text-muted',
     blue: 'bg-brand/10 text-brand',
   }[tone];

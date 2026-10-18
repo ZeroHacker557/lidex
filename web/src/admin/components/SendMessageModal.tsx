@@ -101,7 +101,7 @@ export function SendMessageModal({
               onClick={() => setType(t)}
               className={clsx(
                 'flex-1 rounded-xl border px-3 py-2 text-sm font-medium',
-                type === t ? (t === 'warning' ? 'border-amber-500 bg-amber-500/10 text-amber-700' : 'border-brand bg-brand/10 text-brand') : 'border-line',
+                type === t ? (t === 'warning' ? 'border-amber-500 bg-amber-500/10 text-warn' : 'border-brand bg-brand/10 text-brand') : 'border-line',
               )}
             >
               {t === 'warning' ? '⚠️ Ogohlantirish' : '✉️ Oddiy xabar'}

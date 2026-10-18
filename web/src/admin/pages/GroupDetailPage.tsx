@@ -111,7 +111,7 @@ export function GroupDetailPage() {
         )}
       </div>
       {group.status === 'pending' && (
-        <p className="rounded-xl bg-amber-500/10 px-4 py-3 text-[13px] text-amber-700">
+        <p className="rounded-xl bg-amber-500/10 px-4 py-3 text-[13px] text-warn">
           Guruh hali faol emas — undagi xabarlar lid sifatida qabul qilinmayapti. Xodimlarni biriktirib, "Faollashtirish" tugmasini bosing.
         </p>
       )}

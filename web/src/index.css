@@ -1,58 +1,76 @@
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/manrope';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ---------- Admin panel mavzusi ---------- */
-body.admin {
-  --c-bg: #f6f7fb;
+/* ================= Dizayn tokenlari =================
+   Yorug' — standart. Qorong'i: [data-theme=dark] yoki tizim sozlamasi (data-theme bo'lmasa). */
+:root {
+  --c-bg: #f4f5f9;
   --c-surface: #ffffff;
   --c-surface-2: #f1f3f8;
-  --c-fg: #0f172a;
-  --c-muted: #64748b;
-  --c-line: #e5e7ef;
-  --c-brand: #4f46e5;
+  --c-surface-3: #e8ebf3;
+  --c-fg: #0e1324;
+  --c-muted: #69728a;
+  --c-line: #e4e7ef;
+  --c-brand: #5b5bf6;
+  --c-brand-2: #9b5cf6;
   --c-brand-fg: #ffffff;
-  --c-danger: #dc2626;
+  --c-danger: #e5484d;
+  --c-warn: #b45309;
+  --c-good: #15803d;
   color-scheme: light;
 }
+
 @media (prefers-color-scheme: dark) {
-  body.admin:not(.light) {
-    --c-bg: #0b0f19;
-    --c-surface: #121826;
-    --c-surface-2: #1a2132;
-    --c-fg: #e5e9f2;
-    --c-muted: #8b95a9;
-    --c-line: #252d40;
-    --c-brand: #818cf8;
-    --c-brand-fg: #0b0f19;
-    --c-danger: #f87171;
+  :root:not([data-theme='light']) {
+    --c-bg: #0a0c13;
+    --c-surface: #121521;
+    --c-surface-2: #191d2b;
+    --c-surface-3: #222739;
+    --c-fg: #eef0f7;
+    --c-muted: #8b93a8;
+    --c-line: #242a3b;
+    --c-brand: #7b7bff;
+    --c-brand-2: #b18cff;
+    --c-brand-fg: #ffffff;
+    --c-danger: #ff6369;
+    --c-warn: #fbbf24;
+    --c-good: #4ade80;
     color-scheme: dark;
   }
 }
-body.admin.dark {
-  --c-bg: #0b0f19;
-  --c-surface: #121826;
-  --c-surface-2: #1a2132;
-  --c-fg: #e5e9f2;
-  --c-muted: #8b95a9;
-  --c-line: #252d40;
-  --c-brand: #818cf8;
-  --c-brand-fg: #0b0f19;
-  --c-danger: #f87171;
+:root[data-theme='dark'] {
+  --c-bg: #0a0c13;
+  --c-surface: #121521;
+  --c-surface-2: #191d2b;
+  --c-surface-3: #222739;
+  --c-fg: #eef0f7;
+  --c-muted: #8b93a8;
+  --c-line: #242a3b;
+  --c-brand: #7b7bff;
+  --c-brand-2: #b18cff;
+  --c-brand-fg: #ffffff;
+  --c-danger: #ff6369;
+  --c-warn: #fbbf24;
+  --c-good: #4ade80;
   color-scheme: dark;
 }
 
-/* ---------- Mini App: Telegram mavzu ranglari ---------- */
+html,
+body {
+  background: var(--c-bg);
+  color: var(--c-fg);
+  font-family: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
 body.miniapp {
-  --c-bg: var(--tg-theme-secondary-bg-color, #f1f2f6);
-  --c-surface: var(--tg-theme-section-bg-color, var(--tg-theme-bg-color, #ffffff));
-  --c-surface-2: var(--tg-theme-secondary-bg-color, #f1f2f6);
-  --c-fg: var(--tg-theme-text-color, #0f172a);
-  --c-muted: var(--tg-theme-hint-color, #8a94a6);
-  --c-line: color-mix(in srgb, var(--tg-theme-hint-color, #8a94a6) 22%, transparent);
-  --c-brand: var(--tg-theme-button-color, #2481cc);
-  --c-brand-fg: var(--tg-theme-button-text-color, #ffffff);
-  --c-danger: var(--tg-theme-destructive-text-color, #e53935);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
   user-select: none;
@@ -63,12 +81,8 @@ body.miniapp .selectable {
   user-select: text;
 }
 
-html,
-body {
-  background: var(--c-bg);
-  color: var(--c-fg);
-  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  -webkit-font-smoothing: antialiased;
+::selection {
+  background: color-mix(in srgb, var(--c-brand) 25%, transparent);
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -78,18 +92,59 @@ body {
   scrollbar-width: none;
 }
 
+.thin-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: var(--c-line);
+  border-radius: 8px;
+}
+
 .pb-safe {
   padding-bottom: max(env(safe-area-inset-bottom), 0px);
 }
 
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Fon bezagi: yumshoq rangli dog'lar */
+.mesh {
+  background-image:
+    radial-gradient(60% 50% at 0% 0%, color-mix(in srgb, var(--c-brand) 14%, transparent), transparent 70%),
+    radial-gradient(50% 40% at 100% 0%, color-mix(in srgb, var(--c-brand-2) 12%, transparent), transparent 70%);
+}
+
 @layer components {
   .input {
-    @apply w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-[15px] text-fg outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/20;
+    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[15px] text-fg outline-none transition duration-200 placeholder:text-muted/80 hover:border-muted/40 focus:border-brand focus:ring-4 focus:ring-brand/15;
   }
   .label {
-    @apply mb-1.5 block text-[13px] font-medium text-muted;
+    @apply mb-1.5 block text-[13px] font-semibold text-fg/80;
   }
   .card {
-    @apply rounded-2xl border border-line bg-surface;
+    @apply rounded-2xl border border-line/70 bg-surface;
+  }
+  .h-display {
+    @apply font-display font-extrabold tracking-tight;
+  }
+  .skeleton {
+    @apply relative overflow-hidden rounded-lg bg-surface-2;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0 -translate-x-full animate-shimmer;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--c-surface) 70%, transparent), transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

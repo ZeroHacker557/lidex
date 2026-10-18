@@ -1,4 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { AnimatePresence } from 'framer-motion';
+import { Page } from '../shared/motion';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { ApiError } from '../shared/api';
@@ -172,18 +174,23 @@ function Ready({
 
   return (
     <SessionCtx.Provider value={session}>
-      <div className={nested ? '' : 'pb-24'}>
-        <Routes>
-          <Route path="/" element={<LeadsPage />} />
-          <Route path="/reminders" element={<RemindersPage />} />
-          <Route path="/messages" element={<MessagesPage />} />
-          <Route path="/profile" element={<ProfilePage onReplayOnboarding={() => onEmployee({ ...employee, onboardingDone: false })} />} />
-          <Route path="/guide" element={<GuidePage />} />
-          <Route path="/lead/:id" element={<LeadDetailPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+      <div className={nested ? '' : 'pb-28'}>
+        <AnimatePresence mode="wait" initial={false}>
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={<Page><LeadsPage /></Page>} />
+            <Route path="/reminders" element={<Page><RemindersPage /></Page>} />
+            <Route path="/messages" element={<Page><MessagesPage /></Page>} />
+            <Route
+              path="/profile"
+              element={<Page><ProfilePage onReplayOnboarding={() => onEmployee({ ...employee, onboardingDone: false })} /></Page>}
+            />
+            <Route path="/guide" element={<Page><GuidePage /></Page>} />
+            <Route path="/lead/:id" element={<Page><LeadDetailPage /></Page>} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AnimatePresence>
       </div>
-      {!nested && <BottomNav />}
+      <AnimatePresence>{!nested && <BottomNav />}</AnimatePresence>
     </SessionCtx.Provider>
   );
 }

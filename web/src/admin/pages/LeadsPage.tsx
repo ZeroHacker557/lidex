@@ -122,7 +122,7 @@ export function LeadsPage() {
         </Select>
         <label className="flex h-10 items-center gap-2 rounded-xl border border-line bg-surface px-3 text-sm">
           <input type="checkbox" checked={!!filters.flagged} onChange={(e) => set('flagged', e.target.checked ? '1' : '')} />
-          <Flag className="h-4 w-4 text-red-500" /> Belgilanganlar
+          <Flag className="h-4 w-4 text-danger" /> Belgilanganlar
         </label>
         <div className="flex flex-wrap items-center gap-2 md:col-span-2 xl:col-span-6">
           <input type="date" value={filters.from} onChange={(e) => set('from', e.target.value)} className="input h-9 w-40 py-0 text-sm" />
@@ -160,7 +160,7 @@ export function LeadsPage() {
         {query.isError && <ErrorBox error={query.error} onRetry={() => query.refetch()} />}
         <div className="overflow-x-auto">
           <table className="w-full text-[14px]">
-            <thead className="border-b border-line bg-surface-2/50">
+            <thead className="bg-surface-2/50">
               <tr>
                 <Th>#</Th>
                 <Th>Mijoz</Th>
@@ -172,9 +172,9 @@ export function LeadsPage() {
                 <Th>Eslatma</Th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y divide-line/60">
               {leads.map((l) => (
-                <tr key={l.id} onClick={() => openLead(l.id)} className="cursor-pointer hover:bg-surface-2">
+                <tr key={l.id} onClick={() => openLead(l.id)} className="cursor-pointer transition-colors hover:bg-surface-2/70">
                   <Td className="tabular-nums text-muted">
                     <span className="flex items-center gap-1.5">
                       <span className="h-6 w-1 rounded-full" style={{ backgroundColor: STATUS_META[l.status].color }} />
@@ -184,7 +184,7 @@ export function LeadsPage() {
                   <Td>
                     <span className="block font-medium">
                       {l.name ?? <span className="text-muted">Ism yo'q</span>}
-                      {l.flagged && <Flag className="ml-1.5 inline h-3.5 w-3.5 text-red-500" />}
+                      {l.flagged && <Flag className="ml-1.5 inline h-3.5 w-3.5 text-danger" />}
                       {l.isDuplicate && <Repeat2 className="ml-1.5 inline h-3.5 w-3.5 text-violet-500" />}
                     </span>
                     <span className="text-[12px] text-muted">{formatPhone(l.phone)}</span>
@@ -192,14 +192,14 @@ export function LeadsPage() {
                   <Td>
                     <StatusBadge status={l.status} size="sm" />
                   </Td>
-                  <Td>{l.assignedEmployeeId ? empName.get(l.assignedEmployeeId) ?? '…' : <span className="font-medium text-red-600">Biriktirilmagan</span>}</Td>
+                  <Td>{l.assignedEmployeeId ? empName.get(l.assignedEmployeeId) ?? '…' : <span className="font-medium text-danger">Biriktirilmagan</span>}</Td>
                   <Td className="text-muted">{l.groupTitle}</Td>
                   <Td className="whitespace-nowrap text-muted">{smartDate(l.createdAt)}</Td>
                   <Td className="whitespace-nowrap">
                     {l.responseSeconds != null ? (
                       duration(l.responseSeconds)
                     ) : l.status === 'new' ? (
-                      <span className={l.slaNotifiedAt ? 'font-medium text-red-600' : 'text-amber-600'}>kutilmoqda</span>
+                      <span className={l.slaNotifiedAt ? 'font-medium text-danger' : 'text-warn'}>kutilmoqda</span>
                     ) : (
                       '—'
                     )}
