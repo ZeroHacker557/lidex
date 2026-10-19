@@ -10,6 +10,7 @@ import { logger } from '../logger.js';
 import { logEvent, SYSTEM } from '../services/events.js';
 import { allGroups } from '../services/groups.js';
 import { processPendingInbox } from '../services/inbox.js';
+import { syncHistory } from '../userbot/history.js';
 import { toLeadDto } from '../services/leads.js';
 import { escalationText, notifyAdmins, notifyEmployeePlain, notifyReminder, notifySla } from '../services/notify.js';
 import { emitToAdmins, emitToEmployee } from '../services/realtime.js';
@@ -189,6 +190,11 @@ export async function processDigest(now = new Date()) {
 /** Bitta tsikl: eslatmalar, SLA, dayjest. Serverless'da /api/cron/tick orqali chaqiriladi */
 export async function runTick() {
   const startedAt = Date.now();
+  // Userbot: guruh tarixidan yangi xabarlarni o'qish (boshqa botlar yuborgan lidlar ham)
+  const history = await syncHistory().catch((err) => {
+    logger.error({ err: (err as Error).message }, "Userbot tarixini o'qishda xato");
+    return null;
+  });
   // Avval qolib ketgan guruh xabarlari (internet uzilishi va h.k.) — lid yo'qolmasin
   const recovered = await processPendingInbox().catch((err) => {
     logger.error({ err: (err as Error).message }, 'Inbox qayta ishlashda xato');
@@ -197,7 +203,7 @@ export async function runTick() {
   const reminders = await processReminders();
   await processSla();
   await processDigest();
-  return { recovered, reminders, ms: Date.now() - startedAt };
+  return { history: history?.messages ?? null, recovered, reminders, ms: Date.now() - startedAt };
 }
 
 async function tick() {

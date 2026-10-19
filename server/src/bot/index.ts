@@ -52,6 +52,7 @@ async function handleChatMessage(ctx: Context, msg: Message, isEdit = false) {
     messageId: msg.message_id,
     text,
     from,
+    fromBot: !!msg.from?.is_bot,
     telegramUsername: msg.forward_origin?.type === 'user' ? (msg.forward_origin.sender_user.username ?? null) : null,
     isEdit,
     messageDate: new Date((msg.edit_date ?? msg.date) * 1000),

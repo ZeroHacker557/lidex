@@ -34,6 +34,7 @@ import {
   toLeadDto,
 } from '../../services/leads.js';
 import { forceIngestInbox } from '../../services/inbox.js';
+import { disconnectUserbot, getState, publicState, sendLoginCode, signIn, syncHistory } from '../../userbot/history.js';
 import { sendStaffMessage } from '../../services/messages.js';
 import { emitToAdmins, emitToEmployee, onlineEmployeeIds } from '../../services/realtime.js';
 import { dashboard, employeeStats, leadsCsv, scopeFilter } from '../../services/stats.js';
@@ -387,6 +388,7 @@ const settingsSchema = z
     requirePhone: z.boolean(),
     stickyDuplicates: z.boolean(),
     ingestVia: z.enum(['bot', 'userbot']),
+    leadSenders: z.enum(['all', 'bots_only']),
   })
   .partial();
 
@@ -642,4 +644,34 @@ adminRouter.patch('/admins/:id', requireSuperadmin, async (req, res) => {
   if (password) patch.passwordHash = await bcrypt.hash(password, 10);
   await db().update(COL.admins, target.id, patch);
   res.json({ admin: publicAdmin({ ...target, ...patch }) });
+});
+
+// ---------------- Userbot (boshqa botlar yuborgan lidlarni o'qish) — faqat superadmin ----------------
+
+adminRouter.get('/userbot', requireSuperadmin, async (_req, res) => {
+  res.json(publicState(await getState()));
+});
+
+adminRouter.post('/userbot/code', requireSuperadmin, async (req, res) => {
+  const body = z
+    .object({ apiId: z.coerce.number().int().positive(), apiHash: z.string().trim().min(10).max(64), phone: z.string().trim().min(7).max(20) })
+    .parse(req.body);
+  await sendLoginCode(body);
+  res.json({ ok: true });
+});
+
+adminRouter.post('/userbot/sign-in', requireSuperadmin, async (req, res) => {
+  const body = z.object({ code: z.string().trim().max(10).optional(), password: z.string().max(200).optional() }).parse(req.body);
+  const r = await signIn(body);
+  res.json({ ...r, state: publicState(await getState()) });
+});
+
+adminRouter.post('/userbot/sync', requireSuperadmin, async (req, res) => {
+  const { backfillHours } = z.object({ backfillHours: z.coerce.number().min(1).max(72).optional() }).parse(req.body ?? {});
+  res.json(await syncHistory({ backfillHours, force: true }));
+});
+
+adminRouter.delete('/userbot', requireSuperadmin, async (_req, res) => {
+  await disconnectUserbot();
+  res.json({ ok: true });
 });

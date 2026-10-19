@@ -125,6 +125,8 @@ export interface GroupSettings {
   stickyDuplicates: boolean;
   /** Lidlarni o'qish usuli: bot (Bot API) yoki userbot (MTProto) */
   ingestVia: 'bot' | 'userbot';
+  /** Kimning xabarlari lid hisoblanadi: hammaning yoki faqat botlarning (forma botlari) */
+  leadSenders: 'all' | 'bots_only';
 }
 
 export const DEFAULT_GROUP_SETTINGS: GroupSettings = {
@@ -135,4 +137,5 @@ export const DEFAULT_GROUP_SETTINGS: GroupSettings = {
   requirePhone: true,
   stickyDuplicates: true,
   ingestVia: 'bot',
+  leadSenders: 'all',
 };

@@ -10,6 +10,7 @@ import { Card, Segmented, useOpenLead } from './common';
 
 const REASONS: Record<string, string> = {
   no_phone: 'Telefon raqami topilmadi',
+  not_bot: "Odam yozgan xabar (guruhda faqat bot xabarlari lid hisoblanadi)",
   group_inactive: 'Guruh o\'sha paytda faol emas edi',
 };
 

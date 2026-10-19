@@ -31,6 +31,9 @@ export interface Group {
   lastAssignedEmployeeId: string | null;
   botMember: boolean;
   leadCount: number;
+  /** Userbot: oxirgi o'qilgan xabar id va kanal accessHash */
+  userbotLastId?: number | null;
+  userbotAccessHash?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -134,6 +137,8 @@ export interface InboxItem {
   messageId: number;
   text: string;
   from: string | null;
+  /** Xabarni bot yuborganmi (faqat userbot aniqlay oladi) */
+  fromBot: boolean;
   telegramUsername: string | null;
   isEdit: boolean;
   status: InboxStatus;

@@ -5,9 +5,10 @@ import { Button, errorText, useToast } from '../../shared/ui';
 import { api } from '../api';
 import { Card, CopyField, Field, PageHeader } from '../components/common';
 import { useAdmin } from '../context';
+import { UserbotCard } from '../components/UserbotCard';
 
 export function SettingsPage() {
-  const { admin } = useAdmin();
+  const { admin, isSuper } = useAdmin();
   const toast = useToast();
   const qc = useQueryClient();
   const [current, setCurrent] = useState('');
@@ -55,6 +56,8 @@ export function SettingsPage() {
     <div className="max-w-3xl">
       <PageHeader title="Sozlamalar" subtitle={`${admin.fullName} · @${admin.username}`} />
       <div className="space-y-5">
+        {isSuper && <UserbotCard />}
+
         <Card title="Telegram bildirishnomalari">
           <p className="text-[14px] text-muted">
             Telegramingizni ulasangiz, bot sizga kechikayotgan lidlar, biriktirilmagan lidlar va har kungi hisobotni yuboradi.

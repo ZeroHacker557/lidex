@@ -93,6 +93,7 @@ export interface IncomingMessage {
   messageId: number;
   text: string;
   from: string | null;
+  fromBot?: boolean;
   telegramUsername?: string | null;
   isEdit?: boolean;
   messageDate: Date;
@@ -106,6 +107,10 @@ async function setStatus(id: string, status: InboxStatus, extra: Partial<InboxIt
 async function processItem(id: string, item: InboxItem, group: WithId<Group>): Promise<InboxStatus> {
   if (group.status !== 'active') {
     await setStatus(id, 'skipped', { reason: 'group_inactive' });
+    return 'skipped';
+  }
+  if (group.settings.leadSenders === 'bots_only' && !item.fromBot) {
+    await setStatus(id, 'skipped', { reason: 'not_bot' });
     return 'skipped';
   }
   try {
@@ -168,6 +173,7 @@ async function saveAndProcess(msg: IncomingMessage): Promise<void> {
     messageId: msg.messageId,
     text: msg.text.slice(0, 4000),
     from: msg.from,
+    fromBot: !!msg.fromBot,
     telegramUsername: msg.telegramUsername ?? null,
     isEdit: !!msg.isEdit,
     status: 'pending',

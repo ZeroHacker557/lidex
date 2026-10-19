@@ -151,12 +151,12 @@ export function GroupDetailPage() {
             </SettingRow>
             {group.chatType !== 'api' && (
               <Field
-                label="Xabarlarni o'qish usuli"
-                hint="Lidlar guruhga BOSHQA BOT orqali tushsa — Userbot tanlang (Telegram botlari bir-birining xabarini ko'rmaydi)"
+                label="Kimning xabarlari lid hisoblanadi"
+                hint="Guruhda xodimlar ham izoh yozsa — 'Faqat botlar' ni tanlang. Bot xabarlarini o'qish uchun Sozlamalarda Telegram akkaunt ulangan bo'lishi kerak."
               >
-                <Select value={settings.ingestVia} onChange={(e) => set('ingestVia', e.target.value as 'bot' | 'userbot')}>
-                  <option value="bot">Bot (odamlar yozgan / forward qilingan xabarlar, kanal postlari)</option>
-                  <option value="userbot">Userbot (boshqa botlar yozgan xabarlar ham)</option>
+                <Select value={settings.leadSenders ?? 'all'} onChange={(e) => set('leadSenders', e.target.value as 'all' | 'bots_only')}>
+                  <option value="all">Hamma (telefon raqami bor har qanday xabar)</option>
+                  <option value="bots_only">Faqat botlar (lid formalari) — odamlar yozgan izohlar e'tiborsiz</option>
                 </Select>
               </Field>
             )}
