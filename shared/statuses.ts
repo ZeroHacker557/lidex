@@ -127,6 +127,8 @@ export interface GroupSettings {
   ingestVia: 'bot' | 'userbot';
   /** Kimning xabarlari lid hisoblanadi: hammaning yoki faqat botlarning (forma botlari) */
   leadSenders: 'all' | 'bots_only';
+  /** Yangi lidga kechikib javob berilsa xodimga Telegram ogohlantirishi yuborilsinmi */
+  slaAlerts: boolean;
 }
 
 export const DEFAULT_GROUP_SETTINGS: GroupSettings = {
@@ -138,4 +140,5 @@ export const DEFAULT_GROUP_SETTINGS: GroupSettings = {
   stickyDuplicates: true,
   ingestVia: 'bot',
   leadSenders: 'all',
+  slaAlerts: false,
 };

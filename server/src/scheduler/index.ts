@@ -103,7 +103,8 @@ export async function processSla(now = new Date()) {
     if (addMinutes(start, g.settings.slaMinutes) > now) continue;
     await db().update(COL.leads, lead.id, { slaNotifiedAt: now });
     const emp = await employees.get(lead.assignedEmployeeId);
-    if (emp?.isActive) await notifySla(emp, lead);
+    // Xodimga ogohlantirish faqat guruh sozlamasida yoqilgan bo'lsa (standart: o'chirilgan — lidlar bilan chalkashmasin)
+    if (emp?.isActive && g.settings.slaAlerts) await notifySla(emp, lead);
     await logEvent(lead, SYSTEM, 'sla_warning', { meta: { slaMinutes: g.settings.slaMinutes } });
   }
 

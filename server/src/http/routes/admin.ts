@@ -389,6 +389,7 @@ const settingsSchema = z
     stickyDuplicates: z.boolean(),
     ingestVia: z.enum(['bot', 'userbot']),
     leadSenders: z.enum(['all', 'bots_only']),
+    slaAlerts: z.boolean(),
   })
   .partial();
 

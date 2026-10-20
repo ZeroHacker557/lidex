@@ -149,6 +149,12 @@ export function GroupDetailPage() {
             <SettingRow title="Takroriy raqam — avvalgi xodimga" text="Mijoz qayta yozsa, uni oldin gaplashgan xodim oladi">
               <Toggle checked={settings.stickyDuplicates} onChange={(v) => set('stickyDuplicates', v)} />
             </SettingRow>
+            <SettingRow
+              title="Kechikish haqida xodimni ogohlantirish"
+              text="Yoqilsa, javobsiz yangi lid uchun xodimga Telegramda '⚠️ … dan beri javobsiz' xabari boradi. Adminlar kechikishni baribir ko'radi"
+            >
+              <Toggle checked={!!settings.slaAlerts} onChange={(v) => set('slaAlerts', v)} />
+            </SettingRow>
             {group.chatType !== 'api' && (
               <Field
                 label="Kimning xabarlari lid hisoblanadi"
