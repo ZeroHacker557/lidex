@@ -13,7 +13,7 @@ import { receiveGroupMessage, withRetry } from '../services/inbox.js';
 import { changeStatus, tomorrowAtReminderHour } from '../services/leads.js';
 import { markMessageRead } from '../services/messages.js';
 import { bot, botInfo } from './instance.js';
-import { esc, leadCard, leadKeyboard, panelKeyboard, STATUS_CODES, TEXT } from './texts.js';
+import { esc, installKeyboard, leadCard, leadKeyboard, panelKeyboard, STATUS_CODES, TEXT } from './texts.js';
 
 const isGroupChat = (ctx: Context) => ctx.chat?.type === 'group' || ctx.chat?.type === 'supergroup';
 
@@ -193,6 +193,22 @@ export function setupBot() {
 
   privateChat.command('help', (ctx) => ctx.reply(TEXT.help, { parse_mode: 'HTML', reply_markup: panelKeyboard() }));
 
+  privateChat.command('install', async (ctx) => {
+    const emp = await findEmployeeByTelegram(ctx.from.id);
+    if (!emp?.isActive) return ctx.reply(TEXT.askKey, { parse_mode: 'HTML' });
+    await ctx.reply(
+      [
+        "📲 <b>Lidex'ni telefoningizga o'rnating</b>",
+        '',
+        "Tugmani bosing va ochilgan oynada <b>\"Bosh ekranga qo'shish\"</b> ni tasdiqlang. " +
+          "Bosh ekranda Lidex belgisi paydo bo'ladi — bossangiz panel darhol ochiladi.",
+        '',
+        "🔐 Kalit qayta so'ralmaydi: Telegram akkauntingiz orqali o'z hisobingizga avtomatik kirasiz.",
+      ].join('\n'),
+      { parse_mode: 'HTML', reply_markup: installKeyboard() },
+    );
+  });
+
   privateChat.command('stats', async (ctx) => {
     const emp = await findEmployeeByTelegram(ctx.from.id);
     if (!emp?.isActive) return ctx.reply(TEXT.askKey, { parse_mode: 'HTML' });
@@ -301,6 +317,7 @@ async function setCommandsAndMenu() {
       { command: 'start', description: 'Boshlash / kalit bilan kirish' },
       { command: 'panel', description: 'Lidlar paneli' },
       { command: 'stats', description: 'Bugungi natijalar' },
+      { command: 'install', description: "Telefonga ilova sifatida o'rnatish" },
       { command: 'help', description: "Qo'llanma" },
     ])
     .catch(() => undefined);
@@ -393,4 +410,13 @@ export async function initBotServerless(): Promise<void> {
   await bot.init();
   botInfo.set(bot.botInfo.username);
   await ensureWebhook(true);
+  // Buyruqlar ro'yxati o'zgargan bo'lsa (yangi versiya) — bir marta yangilaymiz
+  const meta = await db().get<{ commandsVersion?: number }>(COL.counters, 'botMeta').catch(() => null);
+  if ((meta?.commandsVersion ?? 0) < COMMANDS_VERSION) {
+    await setCommandsAndMenu();
+    await db().set(COL.counters, 'botMeta', { commandsVersion: COMMANDS_VERSION }, { merge: true }).catch(() => undefined);
+  }
 }
+
+/** Buyruqlar yoki menyu o'zgarganda oshiriladi */
+const COMMANDS_VERSION = 2;

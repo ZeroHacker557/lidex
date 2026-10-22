@@ -56,7 +56,14 @@ export function leadKeyboard(lead: WithId<Lead>, opts: { quick?: boolean } = {})
 }
 
 export function panelKeyboard(): InlineKeyboard | undefined {
-  return webAppAvailable ? new InlineKeyboard().webApp('📋 Panelni ochish', `${webAppUrl}/`) : undefined;
+  return webAppAvailable
+    ? new InlineKeyboard().webApp('📋 Panelni ochish', `${webAppUrl}/`).row().webApp("📲 Telefonga o'rnatish", `${webAppUrl}/install`)
+    : undefined;
+}
+
+/** Faqat "Telefonga o'rnatish" tugmasi */
+export function installKeyboard(): InlineKeyboard | undefined {
+  return webAppAvailable ? new InlineKeyboard().webApp("📲 Telefonga o'rnatish", `${webAppUrl}/install`) : undefined;
 }
 
 export function staffMessageText(m: StaffMessage): string {
@@ -91,5 +98,5 @@ export const TEXT = {
     "3️⃣ \"Keyinga\" — sana tanlasangiz o'sha kuni, sanasiz bo'lsa har 2 kunda eslataman.\n" +
     "4️⃣ Yakunlangan lid statusini panelda <b>Tahrirlash</b> orqali o'zgartirish mumkin.\n" +
     '5️⃣ Yangi lidga imkon qadar tez (15 daqiqa ichida) javob bering — rahbarlar kechikishni ko\'radi.\n\n' +
-    'Buyruqlar: /panel — panel, /stats — bugungi natijalar, /help — yordam',
+    "Buyruqlar: /panel — panel, /stats — bugungi natijalar, /install — telefonga o'rnatish, /help — yordam",
 };

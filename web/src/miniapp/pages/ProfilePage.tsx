@@ -8,6 +8,7 @@ import { LEAD_STATUSES, STATUS_META, type LeadStatus } from '@shared/statuses';
 import { duration } from '../../shared/format';
 import { AnimatedNumber, ease, spring } from '../../shared/motion';
 import { Avatar, errorText, useToast } from '../../shared/ui';
+import { InstallCard } from '../components/InstallCard';
 import { ROADMAP } from '../guide';
 import { api, useSession } from '../session';
 import { haptic } from '../telegram';
@@ -177,6 +178,8 @@ export function ProfilePage({ onReplayOnboarding }: { onReplayOnboarding: () => 
           </ol>
         </section>
       )}
+
+      <InstallCard />
 
       <section className="card divide-y divide-line/70 overflow-hidden shadow-soft">
         <Link to="/guide" className="flex items-center gap-3 p-4 active:bg-surface-2">

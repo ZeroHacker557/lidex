@@ -8,6 +8,7 @@ import type { Employee, Lead, StaffMessage } from '../shared/types';
 import { ErrorBox, FullScreenLoader, useToast } from '../shared/ui';
 import { BottomNav } from './components/BottomNav';
 import { GuidePage } from './pages/GuidePage';
+import { InstallPage } from './pages/InstallPage';
 import { KeyScreen } from './pages/KeyScreen';
 import { LeadDetailPage } from './pages/LeadDetailPage';
 import { LeadsPage } from './pages/LeadsPage';
@@ -172,7 +173,7 @@ function Ready({
     );
   }
 
-  const nested = location.pathname.startsWith('/lead/') || location.pathname.startsWith('/guide');
+  const nested = location.pathname.startsWith('/lead/') || location.pathname.startsWith('/guide') || location.pathname.startsWith('/install');
 
   return (
     <SessionCtx.Provider value={session}>
@@ -186,6 +187,7 @@ function Ready({
               element={<Page><ProfilePage onReplayOnboarding={() => onEmployee({ ...employee, onboardingDone: false })} /></Page>}
             />
             <Route path="/guide" element={<Page><GuidePage /></Page>} />
+            <Route path="/install" element={<Page><InstallPage /></Page>} />
             <Route path="/lead/:id" element={<Page><LeadDetailPage /></Page>} />
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
