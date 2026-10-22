@@ -1,13 +1,14 @@
 import { OPEN_STATUSES, STATUS_META, type LeadStatus } from '../../../shared/statuses.js';
 import { config } from '../config.js';
-import { COL, db, type Employee, type Group, type Lead, type LeadField, type LeadSource, type WithId } from '../db/index.js';
+import { COL, db, type Employee, type Filter, type Group, type Lead, type LeadField, type LeadSource, type WithId } from '../db/index.js';
 import { badRequest, forbidden, notFound } from '../lib/errors.js';
 import { buildSearchTokens, parseLeadText } from '../lib/parser.js';
 import { normalizePhone } from '../lib/phone.js';
 import { addDays, addHours, atLocal, localParts, shiftOutOfQuietHours } from '../lib/time.js';
 import { logger } from '../logger.js';
 import { logEvent, SYSTEM, type Actor } from './events.js';
-import { notifyAdmins, notifyNewLead, notifyReassigned } from './notify.js';
+import { panelKeyboard } from '../bot/texts.js';
+import { notifyAdmins, notifyEmployeePlain, notifyNewLead, notifyReassigned } from './notify.js';
 import { emitToAdmins, emitToEmployee } from './realtime.js';
 
 export type LeadDto = Omit<WithId<Lead>, 'searchTokens'>;
@@ -302,7 +303,12 @@ export async function markViewed(lead: WithId<Lead>, actor: Actor): Promise<void
   emitToAdmins(lead.groupId, 'lead:updated', toLeadDto(lead));
 }
 
-export async function reassignLead(leadId: string, employeeId: string | null, actor: Actor): Promise<WithId<Lead>> {
+export async function reassignLead(
+  leadId: string,
+  employeeId: string | null,
+  actor: Actor,
+  opts: { notify?: boolean } = {},
+): Promise<WithId<Lead>> {
   const lead = await getLeadOr404(leadId);
   if (lead.assignedEmployeeId === employeeId) return lead;
   let emp: WithId<Employee> | null = null;
@@ -331,7 +337,7 @@ export async function reassignLead(leadId: string, employeeId: string | null, ac
   if (lead.assignedEmployeeId) emitToEmployee(lead.assignedEmployeeId, 'lead:removed', { id: lead.id });
   if (emp) {
     emitToEmployee(emp.id, 'lead:new', dto);
-    await notifyReassigned(emp, updated).catch(() => undefined);
+    if (opts.notify !== false) await notifyReassigned(emp, updated).catch(() => undefined);
   }
   emitToAdmins(updated.groupId, 'lead:updated', dto);
   return updated;
@@ -348,4 +354,45 @@ export async function setFlag(leadId: string, flagged: boolean, note: string | n
   emitToEmployee(updated.assignedEmployeeId, 'lead:updated', dto);
   emitToAdmins(updated.groupId, 'lead:updated', dto);
   return updated;
+}
+
+/**
+ * Ommaviy biriktirish: guruh lidlarini bitta xodimga o'tkazish (masalan yangi xodim qo'shilganda).
+ * Har bir lid uchun alohida bildirishnoma yuborilmaydi — oxirida bitta umumiy xabar boradi.
+ */
+export async function bulkAssign(
+  input: { toEmployeeId: string; groupIds: string[]; fromEmployeeId?: string | null; scope: 'open' | 'all' },
+  actor: Actor,
+): Promise<{ moved: number; total: number; waitingNew: number }> {
+  const emp = await db().get<Employee>(COL.employees, input.toEmployeeId);
+  if (!emp || !emp.isActive) throw badRequest('Xodim topilmadi yoki faol emas');
+  const groupIds = input.groupIds.filter((g) => emp.groupIds.includes(g));
+  if (!groupIds.length) throw badRequest('Xodim tanlangan guruhga biriktirilmagan');
+
+  const leads: WithId<Lead>[] = [];
+  for (const groupId of groupIds) {
+    const where: Filter[] = [['groupId', '==', groupId]];
+    if (input.fromEmployeeId) where.push(['assignedEmployeeId', '==', input.fromEmployeeId]);
+    if (input.scope === 'open') where.push(['status', 'in', OPEN_STATUSES]);
+    leads.push(...(await db().query<Lead>(COL.leads, { where, limit: 3000 })));
+  }
+  const targets = leads.filter((l) => l.assignedEmployeeId !== emp.id).sort((a, b) => a.seq - b.seq);
+
+  // 10 tadan parallel — Firestore'ni ortiqcha yuklamaslik uchun
+  for (let i = 0; i < targets.length; i += 10) {
+    await Promise.all(targets.slice(i, i + 10).map((l) => reassignLead(l.id, emp.id, actor, { notify: false })));
+  }
+
+  const waitingNew = await db().count(COL.leads, { where: [['assignedEmployeeId', '==', emp.id], ['status', '==', 'new']] });
+  if (targets.length) {
+    await notifyEmployeePlain(
+      emp,
+      `📥 <b>Sizga ${targets.length} ta lid biriktirildi</b>\n` +
+        `Javob kutayotgan yangi lidlar: <b>${waitingNew} ta</b>\n\n` +
+        "Ilovani ochib, ularni birinchisidan boshlab ko'rib chiqing.",
+      panelKeyboard(),
+    ).catch(() => undefined);
+  }
+  logger.info({ to: emp.fullName, moved: targets.length }, 'Lidlar ommaviy biriktirildi');
+  return { moved: targets.length, total: leads.length, waitingNew };
 }

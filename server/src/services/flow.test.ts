@@ -6,7 +6,7 @@ import { addDays, addMinutes } from '../lib/time.js';
 import { processReminders, processSla } from '../scheduler/index.js';
 import { invalidateGroups, newGroup } from './groups.js';
 import { inboxId, processPendingInbox, receiveGroupMessage } from './inbox.js';
-import { changeStatus, ingestLead, reassignLead } from './leads.js';
+import { bulkAssign, changeStatus, ingestLead, reassignLead } from './leads.js';
 
 setStore(new MemoryStore(null));
 
@@ -135,4 +135,27 @@ test("inbox: baza vaqtincha ishlamasa lid yo'qolmaydi, scheduler tiklaydi", asyn
   // Xuddi shu xabar qayta kelsa (Telegram qayta yuborishi) — ikkinchi lid yaratilmaydi
   await receiveGroupMessage({ group, chatId: -1002, messageId: 10, from: '@lead_bot', messageDate: new Date(), text: 'Full name: Tiklangan Mijoz\nPhone number: +998901112299' });
   assert.equal((await store.query<Lead>(COL.leads, { where: [['groupId', '==', gid]] })).length, 1);
+});
+
+test('bulkAssign: guruhdagi barcha lidlar yangi xodimga o\'tadi, tarixda qoladi', async () => {
+  const store = db();
+  const gid = await store.create(COL.groups, newGroup({ title: 'Bulk', chatId: -1003, chatType: 'supergroup', status: 'active' }));
+  invalidateGroups();
+  const old = await store.create(COL.employees, employee('Eski', [gid], 91, new Date('2026-01-01')));
+  const group = (await store.get<Group>(COL.groups, gid))!;
+  for (let i = 1; i <= 5; i++) {
+    await ingestLead({ group, source: 'telegram', text: `Ism: M${i}\nTel: 90555000${i}`, chatId: -1003, messageId: i });
+  }
+  const first = (await store.query<Lead>(COL.leads, { where: [['groupId', '==', gid]] })).sort((a, b) => a.seq - b.seq)[0]!;
+  await changeStatus(first.id, { type: 'employee', id: old, name: 'Eski' }, { status: 'success' });
+
+  const fresh = await store.create(COL.employees, employee('Yangi', [gid], 92, new Date('2026-02-01')));
+  const open = await bulkAssign({ toEmployeeId: fresh, groupIds: [gid], scope: 'open' }, { type: 'admin', id: 'a', name: 'Admin' });
+  assert.equal(open.moved, 4);
+  const all = await bulkAssign({ toEmployeeId: fresh, groupIds: [gid], scope: 'all' }, { type: 'admin', id: 'a', name: 'Admin' });
+  assert.equal(all.moved, 1);
+  const leads = await store.query<Lead>(COL.leads, { where: [['groupId', '==', gid]] });
+  assert.ok(leads.every((l) => l.assignedEmployeeId === fresh));
+  const ev = await store.query<LeadEvent>(COL.events, { where: [['leadId', '==', first.id], ['type', '==', 'reassigned']] });
+  assert.equal(ev.length, 1);
 });

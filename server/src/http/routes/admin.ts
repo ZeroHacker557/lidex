@@ -25,6 +25,7 @@ import { newKeyFields, publicEmployee } from '../../services/employees.js';
 import { allGroups, invalidateGroups, newGroup } from '../../services/groups.js';
 import {
   addNote,
+  bulkAssign,
   changeStatus,
   eligibleEmployees,
   getLeadOr404,
@@ -353,6 +354,22 @@ adminRouter.post('/employees/:id/unbind', async (req, res) => {
   await db().update(COL.employees, emp.id, { telegramId: null, telegramUsername: null, boundAt: null });
   emitToEmployee(emp.id, 'employee:updated', { id: emp.id, loggedOut: true });
   res.json({ ok: true });
+});
+
+/** Guruh lidlarini shu xodimga ommaviy biriktirish (yangi xodim qo'shilganda va h.k.) */
+adminRouter.post('/employees/:id/bulk-assign', async (req, res) => {
+  const emp = await getEmployeeScoped(req, String(req.params.id));
+  const body = z
+    .object({
+      groupId: id.optional(),
+      fromEmployeeId: id.nullable().optional(),
+      scope: z.enum(['open', 'all']).default('open'),
+    })
+    .parse(req.body ?? {});
+  const groupIds = body.groupId ? [body.groupId] : emp.groupIds;
+  for (const g of groupIds) assertGroupAccess(req.admin!, g);
+  const r = await bulkAssign({ toEmployeeId: emp.id, groupIds, fromEmployeeId: body.fromEmployeeId ?? null, scope: body.scope }, adminActor(req));
+  res.json(r);
 });
 
 /** Xodimning ochiq lidlarini guruhdagi boshqa xodimlarga navbatma-navbat taqsimlash */

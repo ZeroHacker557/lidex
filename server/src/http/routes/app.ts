@@ -8,7 +8,7 @@ import { COL, db, type Employee, type Filter, type Group, type Lead, type LeadEv
 import { badRequest, notFound, unauthorized } from '../../lib/errors.js';
 import { searchTokenFor } from '../../lib/parser.js';
 import { signToken, verifyInitData, type TelegramWebAppUser } from '../../lib/security.js';
-import { addDays, startOfLocalDay } from '../../lib/time.js';
+import { addDays, atLocal, startOfLocalDay } from '../../lib/time.js';
 import { bindEmployeeByKey, findEmployeeByTelegram, publicEmployee } from '../../services/employees.js';
 import { addNote, changeStatus, getLeadOr404, markViewed, toLeadDto } from '../../services/leads.js';
 import { markMessageRead } from '../../services/messages.js';
@@ -91,9 +91,21 @@ appRouter.patch('/me', async (req, res) => {
   res.json({ ok: true });
 });
 
+/** YYYY-MM-DD (Toshkent) -> [kun boshi, keyingi kun boshi) */
+const dateParam = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .optional();
+function dayRange(date: string): [Date, Date] {
+  const [y, m, d] = date.split('-').map(Number) as [number, number, number];
+  const start = atLocal(y, m - 1, d);
+  return [start, addDays(start, 1)];
+}
+
 appRouter.get('/summary', async (req, res) => {
   const id = req.employee!.id;
   const base: Filter = ['assignedEmployeeId', '==', id];
+  const { date } = z.object({ date: dateParam }).parse(req.query);
   const endOfDay = addDays(startOfLocalDay(), 1);
   const [counts, dueToday, unread] = await Promise.all([
     Promise.all(LEAD_STATUSES.map((s) => db().count(COL.leads, { where: [base, ['status', '==', s]] }))),
@@ -103,12 +115,22 @@ appRouter.get('/summary', async (req, res) => {
     db().count(COL.messages, { where: [['employeeId', '==', id], ['readAt', '==', null]] }),
   ]);
   const byStatus = Object.fromEntries(LEAD_STATUSES.map((s, i) => [s, counts[i]])) as Record<LeadStatus, number>;
+  // Tanlangan kun bo'yicha sonlar (sana filtri yoqilganda tablarda ko'rsatiladi)
+  let day: { date: string; byStatus: Record<LeadStatus, number>; active: number; total: number } | null = null;
+  if (date) {
+    const [from, to] = dayRange(date);
+    const range: Filter[] = [base, ['createdAt', '>=', from], ['createdAt', '<', to]];
+    const dc = await Promise.all(LEAD_STATUSES.map((s) => db().count(COL.leads, { where: [...range, ['status', '==', s]] })));
+    const dBy = Object.fromEntries(LEAD_STATUSES.map((s, i) => [s, dc[i]])) as Record<LeadStatus, number>;
+    day = { date, byStatus: dBy, active: OPEN_STATUSES.reduce((a, s) => a + dBy[s], 0), total: dc.reduce((a, b) => a + b, 0) };
+  }
   res.json({
     byStatus,
     active: OPEN_STATUSES.reduce((a, s) => a + byStatus[s], 0),
     total: counts.reduce((a, b) => a + b, 0),
     dueToday,
     unreadMessages: unread,
+    day,
   });
 });
 
@@ -117,15 +139,20 @@ const listQuery = z.object({
   q: z.string().max(60).optional(),
   cursor: z.string().datetime().optional(),
   limit: z.coerce.number().min(1).max(50).default(25),
+  date: dateParam,
 });
 
 appRouter.get('/leads', async (req, res) => {
-  const { tab, q, cursor, limit } = listQuery.parse(req.query);
+  const { tab, q, cursor, limit, date } = listQuery.parse(req.query);
   const where: Filter[] = [['assignedEmployeeId', '==', req.employee!.id]];
   if (tab === 'active') where.push(['status', 'in', OPEN_STATUSES]);
   else if (tab !== 'all') where.push(['status', '==', tab]);
   const token = q ? searchTokenFor(q) : null;
   if (token) where.push(['searchTokens', 'array-contains', token]);
+  if (date) {
+    const [from, to] = dayRange(date);
+    where.push(['createdAt', '>=', from], ['createdAt', '<', to]);
+  }
   const leads = await db().query<Lead>(COL.leads, {
     where,
     orderBy: [['createdAt', 'desc']],

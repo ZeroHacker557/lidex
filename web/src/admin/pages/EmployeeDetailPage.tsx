@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, KeyRound, Mail, Pencil, Shuffle, Unlink } from 'lucide-react';
+import { ArrowLeft, ArrowRightLeft, KeyRound, Mail, Pencil, Shuffle, Unlink } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { EVENT_LABELS, STATUS_META } from '@shared/statuses';
@@ -9,6 +9,7 @@ import { Avatar, Button, ErrorBox, FullScreenLoader, errorText, useToast } from 
 import { api } from '../api';
 import { StatusBreakdown } from '../components/charts';
 import { Card, KpiTile, Select, Toggle, useOpenLead } from '../components/common';
+import { BulkAssignModal } from '../components/BulkAssignModal';
 import { EmployeeFormModal, KeyModal } from '../components/EmployeeForm';
 import { SendMessageModal } from '../components/SendMessageModal';
 import { Badge } from './EmployeesPage';
@@ -30,6 +31,7 @@ export function EmployeeDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [msgOpen, setMsgOpen] = useState(false);
   const [newKey, setNewKey] = useState<{ key: string; deepLink: string | null } | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const q = useQuery({ queryKey: ['employee', id, days], queryFn: () => api.get<Detail>(`/employees/${id}`, { days }) });
   const refresh = () => {
@@ -94,6 +96,9 @@ export function EmployeeDetailPage() {
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => setMsgOpen(true)}>
             <Mail className="h-4 w-4" /> Xabar / ogohlantirish
+          </Button>
+          <Button variant="outline" onClick={() => setBulkOpen(true)}>
+            <ArrowRightLeft className="h-4 w-4" /> Lidlarni biriktirish
           </Button>
           <Button variant="outline" onClick={() => setEditOpen(true)}>
             <Pencil className="h-4 w-4" /> Tahrirlash
@@ -210,6 +215,7 @@ export function EmployeeDetailPage() {
       {editOpen && <EmployeeFormModal employee={e} onClose={() => setEditOpen(false)} />}
       {msgOpen && <SendMessageModal open onClose={() => setMsgOpen(false)} employee={e} />}
       {newKey && <KeyModal data={newKey} name={e.fullName} onClose={() => setNewKey(null)} />}
+      {bulkOpen && <BulkAssignModal employee={e} groups={groups} onClose={() => setBulkOpen(false)} />}
     </div>
   );
 }

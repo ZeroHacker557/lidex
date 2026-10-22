@@ -1,10 +1,11 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
-import { Bell, CircleCheckBig, Inbox, RefreshCw, Search, Sparkles, Trophy, X } from 'lucide-react';
+import { Bell, CalendarDays, CircleCheckBig, Inbox, RefreshCw, Search, Sparkles, Trophy, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LEAD_STATUSES, STATUS_META, type LeadStatus } from '@shared/statuses';
+import { dateKeyOf, dayLabel, tashkentDateKey } from '../../shared/format';
 import { AnimatedNumber, Stagger, spring } from '../../shared/motion';
 import type { Lead, Paged } from '../../shared/types';
 import { Avatar, Button, Empty, ErrorBox } from '../../shared/ui';
@@ -32,25 +33,29 @@ function greeting() {
 export function LeadsPage() {
   const { employee } = useSession();
   const navigate = useNavigate();
-  const { data: summary } = useSummary();
+  const [date, setDate] = useState<string | null>(() => sessionStorage.getItem('lx_date') || null);
+  const { data: summary } = useSummary(date);
   const [tab, setTab] = useState<Tab>(() => (sessionStorage.getItem('lx_tab') as Tab) || 'active');
   const [search, setSearch] = useState('');
   const q = useDebounced(search.trim());
 
   useEffect(() => sessionStorage.setItem('lx_tab', tab), [tab]);
+  useEffect(() => (date ? sessionStorage.setItem('lx_date', date) : sessionStorage.removeItem('lx_date')), [date]);
 
   const query = useInfiniteQuery({
-    queryKey: ['leads', tab, q],
-    queryFn: ({ pageParam }) => api.get<Paged<Lead>>('/leads', { tab, q, cursor: pageParam }),
+    queryKey: ['leads', tab, q, date ?? 'all'],
+    queryFn: ({ pageParam }) => api.get<Paged<Lead>>('/leads', { tab, q, cursor: pageParam, date: date ?? undefined }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.nextCursor ?? undefined,
   });
   const leads = query.data?.pages.flatMap((p) => p.items) ?? [];
 
+  // Sana tanlangan bo'lsa — tablardagi sonlar shu kun bo'yicha
+  const counts = date ? summary?.day : summary;
   const tabs: Array<{ id: Tab; label: string; count?: number; color?: string }> = [
-    { id: 'active', label: 'Faol', count: summary?.active },
-    { id: 'all', label: 'Hammasi', count: summary?.total },
-    ...LEAD_STATUSES.map((s) => ({ id: s as Tab, label: STATUS_META[s].short, count: summary?.byStatus[s], color: STATUS_META[s].color })),
+    { id: 'active', label: 'Faol', count: counts?.active },
+    { id: 'all', label: 'Hammasi', count: counts?.total },
+    ...LEAD_STATUSES.map((s) => ({ id: s as Tab, label: STATUS_META[s].short, count: counts?.byStatus[s], color: STATUS_META[s].color })),
   ];
 
   return (
@@ -132,6 +137,8 @@ export function LeadsPage() {
             </button>
           )}
         </div>
+
+        <DateBar value={date} onChange={(d) => setDate(d)} />
       </header>
 
       {/* Filtrlar */}
@@ -173,14 +180,27 @@ export function LeadsPage() {
         {query.isSuccess && leads.length === 0 && (
           <Empty
             icon={<Inbox className="h-7 w-7" />}
-            title={q ? 'Hech narsa topilmadi' : tab === 'active' ? "Ochiq lidlar yo'q 🎉" : "Bu bo'limda lid yo'q"}
+            title={q ? 'Hech narsa topilmadi' : date ? "Bu kunda lid yo'q" : tab === 'active' ? "Ochiq lidlar yo'q 🎉" : "Bu bo'limda lid yo'q"}
             text={q ? "Boshqa so'z bilan qidirib ko'ring" : 'Yangi lid kelganda bot sizga darhol xabar beradi'}
           />
         )}
-        <Stagger key={`${tab}:${q}`} className="space-y-2.5">
-          {leads.map((l) => (
-            <LeadCard key={l.id} lead={l} />
-          ))}
+        <Stagger key={`${tab}:${q}:${date ?? 'all'}`} className="space-y-2.5">
+          {leads.flatMap((l, i) => {
+            // Barcha kunlar ko'rinishida — har bir kun boshida sarlavha
+            const key = dateKeyOf(l.createdAt);
+            const items = [];
+            if (!date && (i === 0 || dateKeyOf(leads[i - 1]!.createdAt) !== key)) {
+              items.push(
+                <div key={`d-${key}`} className="flex items-center gap-2 pb-0.5 pt-2 first:pt-0">
+                  <CalendarDays className="h-3.5 w-3.5 text-muted" />
+                  <span className="text-[12.5px] font-bold text-fg/70">{dayLabel(l.createdAt)}</span>
+                  <span className="h-px flex-1 bg-line/70" />
+                </div>,
+              );
+            }
+            items.push(<LeadCard key={l.id} lead={l} />);
+            return items;
+          })}
         </Stagger>
         {query.hasNextPage && (
           <Button variant="secondary" className="mt-3 w-full" loading={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>
@@ -188,6 +208,55 @@ export function LeadsPage() {
           </Button>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Sana bo'yicha ko'rish: barcha kunlar / bugun / kecha / istalgan kun */
+function DateBar({ value, onChange }: { value: string | null; onChange: (d: string | null) => void }) {
+  const today = tashkentDateKey(0);
+  const yesterday = tashkentDateKey(-1);
+  const custom = value && value !== today && value !== yesterday ? value : null;
+  const opts: Array<{ id: string | null; label: string }> = [
+    { id: null, label: 'Barcha kunlar' },
+    { id: today, label: 'Bugun' },
+    { id: yesterday, label: 'Kecha' },
+  ];
+  const pick = (d: string | null) => {
+    haptic.select();
+    onChange(d);
+  };
+  return (
+    <div className="no-scrollbar mt-3 flex items-center gap-1.5 overflow-x-auto">
+      {opts.map((o) => (
+        <button
+          key={o.label}
+          onClick={() => pick(o.id)}
+          className={clsx(
+            'shrink-0 rounded-xl px-3 py-1.5 text-[12.5px] font-semibold transition-colors',
+            value === o.id ? 'bg-brand text-white shadow-glow' : 'bg-surface text-fg/70 ring-1 ring-line/70',
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+      <label
+        className={clsx(
+          'relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12.5px] font-semibold transition-colors',
+          custom ? 'bg-brand text-white shadow-glow' : 'bg-surface text-fg/70 ring-1 ring-line/70',
+        )}
+      >
+        <CalendarDays className="h-3.5 w-3.5" />
+        {custom ? dayLabel(`${custom}T12:00:00+05:00`) : 'Sana tanlash'}
+        <input
+          type="date"
+          max={today}
+          value={custom ?? ''}
+          onChange={(e) => pick(e.target.value || null)}
+          className="absolute inset-0 cursor-pointer opacity-0"
+          aria-label="Sana tanlash"
+        />
+      </label>
     </div>
   );
 }

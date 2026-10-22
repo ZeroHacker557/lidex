@@ -101,6 +101,12 @@ export function tashkentIso(dateStr: string, timeStr: string): string {
   return new Date(`${dateStr}T${timeStr || '09:00'}:00+05:00`).toISOString();
 }
 
+/** Sana (ISO) -> YYYY-MM-DD (Toshkent) */
+export function dateKeyOf(v: string | Date): string {
+  const d = tzParts(typeof v === 'string' ? new Date(v) : v);
+  return `${d.y}-${pad(d.m + 1)}-${pad(d.d)}`;
+}
+
 /** Bugundan n kun keyingi sana (YYYY-MM-DD, Toshkent) */
 export function tashkentDateKey(offsetDays = 0): string {
   const d = tzParts(new Date(Date.now() + offsetDays * 86_400_000));

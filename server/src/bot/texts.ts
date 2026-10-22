@@ -38,9 +38,13 @@ export function leadUrl(leadId: string) {
   return `${webAppUrl}/lead/${encodeURIComponent(leadId)}`;
 }
 
+/**
+ * Lid xabari tugmalari: faqat "Ilovani ochish" — status ilova ichida belgilanadi.
+ * Tezkor status tugmalari (quick) faqat aniq so'ralganda qo'shiladi.
+ */
 export function leadKeyboard(lead: WithId<Lead>, opts: { quick?: boolean } = {}): InlineKeyboard {
   const kb = new InlineKeyboard();
-  const quick = opts.quick ?? !STATUS_META[lead.status].final;
+  const quick = opts.quick ?? false;
   // Asosiy tugma — ilovada lidni ochish (eng tepada)
   if (webAppAvailable) kb.webApp('📲 Ilovani ochish', leadUrl(lead.id)).row();
   if (quick) {
