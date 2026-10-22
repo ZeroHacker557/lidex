@@ -12,8 +12,9 @@ import { groupByChatId, migrateChat, registerChat } from '../services/groups.js'
 import { receiveGroupMessage, withRetry } from '../services/inbox.js';
 import { changeStatus, tomorrowAtReminderHour } from '../services/leads.js';
 import { markMessageRead } from '../services/messages.js';
+import { approveWebLogin, getPendingWebLogin, WEB_LOGIN_PREFIX } from '../services/weblogin.js';
 import { bot, botInfo } from './instance.js';
-import { esc, installKeyboard, leadCard, leadKeyboard, panelKeyboard, STATUS_CODES, TEXT } from './texts.js';
+import { esc, installKeyboard, leadCard, leadKeyboard, panelKeyboard, STATUS_CODES, TEXT, webLoginKeyboard } from './texts.js';
 
 const isGroupChat = (ctx: Context) => ctx.chat?.type === 'group' || ctx.chat?.type === 'supergroup';
 
@@ -180,6 +181,13 @@ export function setupBot() {
     if (payload?.startsWith('adm_') && (await tryBindAdmin(ctx, payload.slice(4)))) return;
 
     const emp = await findEmployeeByTelegram(ctx.from.id);
+    // Saytdan "Telegram orqali kirish" — tasdiqlash so'raladi
+    if (payload?.startsWith(WEB_LOGIN_PREFIX)) {
+      if (!emp?.isActive) return ctx.reply(TEXT.webLoginNeedKey, { parse_mode: 'HTML' });
+      const id = payload.slice(WEB_LOGIN_PREFIX.length);
+      if (!(await getPendingWebLogin(id))) return ctx.reply(TEXT.webLoginExpired, { parse_mode: 'HTML' });
+      return ctx.reply(TEXT.webLoginAsk(emp.fullName), { parse_mode: 'HTML', reply_markup: webLoginKeyboard(id) });
+    }
     if (emp?.isActive) return sendPanel(ctx, `👋 Salom, <b>${esc(emp.fullName)}</b>!`);
     if (payload && looksLikeAccessKey(payload)) return tryBindKey(ctx, payload);
     await ctx.reply(TEXT.askKey, { parse_mode: 'HTML' });
@@ -196,17 +204,7 @@ export function setupBot() {
   privateChat.command('install', async (ctx) => {
     const emp = await findEmployeeByTelegram(ctx.from.id);
     if (!emp?.isActive) return ctx.reply(TEXT.askKey, { parse_mode: 'HTML' });
-    await ctx.reply(
-      [
-        "📲 <b>Lidex'ni telefoningizga o'rnating</b>",
-        '',
-        "Tugmani bosing va ochilgan oynada <b>\"Bosh ekranga qo'shish\"</b> ni tasdiqlang. " +
-          "Bosh ekranda Lidex belgisi paydo bo'ladi — bossangiz panel darhol ochiladi.",
-        '',
-        "🔐 Kalit qayta so'ralmaydi: Telegram akkauntingiz orqali o'z hisobingizga avtomatik kirasiz.",
-      ].join('\n'),
-      { parse_mode: 'HTML', reply_markup: installKeyboard() },
-    );
+    await ctx.reply(TEXT.install(), { parse_mode: 'HTML', reply_markup: installKeyboard(), link_preview_options: { is_disabled: true } });
   });
 
   privateChat.command('stats', async (ctx) => {
@@ -277,6 +275,19 @@ export function setupBot() {
     } catch {
       await ctx.answerCallbackQuery({ text: 'Xabar topilmadi' });
     }
+  });
+
+  bot.callbackQuery(/^wl:(.+)$/, async (ctx) => {
+    const id = ctx.match[1]!;
+    if (id === 'no') {
+      await ctx.answerCallbackQuery();
+      return ctx.editMessageText(TEXT.webLoginDenied, { parse_mode: 'HTML' }).catch(() => undefined);
+    }
+    const emp = await findEmployeeByTelegram(ctx.from.id);
+    if (!emp?.isActive || !emp.telegramId) return ctx.answerCallbackQuery({ text: "Ruxsat yo'q", show_alert: true });
+    const ok = await approveWebLogin(id, { id: emp.id, telegramId: emp.telegramId });
+    await ctx.answerCallbackQuery({ text: ok ? '✅ Tasdiqlandi' : "So'rov eskirgan" });
+    await ctx.editMessageText(ok ? TEXT.webLoginDone : TEXT.webLoginExpired, { parse_mode: 'HTML' }).catch(() => undefined);
   });
 
   bot.on('callback_query', (ctx) => ctx.answerCallbackQuery());

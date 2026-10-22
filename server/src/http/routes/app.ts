@@ -13,6 +13,8 @@ import { bindEmployeeByKey, findEmployeeByTelegram, publicEmployee } from '../..
 import { addNote, changeStatus, getLeadOr404, markViewed, toLeadDto } from '../../services/leads.js';
 import { markMessageRead } from '../../services/messages.js';
 import { emitToAdmins } from '../../services/realtime.js';
+import { createWebLogin, pollWebLogin, WEB_LOGIN_PREFIX } from '../../services/weblogin.js';
+import { bot, botInfo } from '../../bot/instance.js';
 import { safeAvgResponse } from '../../services/stats.js';
 import { employeeActor, requireEmployee } from '../middleware.js';
 
@@ -32,8 +34,9 @@ function resolveInitData(initData: string): TelegramWebAppUser {
   return v.user;
 }
 
-function issue(emp: { id: string; telegramId: number | null }) {
-  return signToken({ kind: 'employee', sub: emp.id, tg: emp.telegramId! }, '7d');
+/** Telegram ichida — 7 kun (har ochilganda yangilanadi); sayt / o'rnatilgan ilovada — 90 kun */
+function issue(emp: { id: string; telegramId: number | null }, ttl: '7d' | '90d' = '7d') {
+  return signToken({ kind: 'employee', sub: emp.id, tg: emp.telegramId! }, ttl);
 }
 
 const authLimiter = rateLimit({ windowMs: 10 * 60_000, limit: 30, standardHeaders: true, legacyHeaders: false });
@@ -65,8 +68,37 @@ appRouter.post('/auth/key', authLimiter, async (req, res) => {
   res.json({ token: issue(emp), employee: publicEmployee(emp) });
 });
 
+// ---------------- Sayt orqali kirish (Telegram tasdig'i bilan) ----------------
+
+const pollLimiter = rateLimit({ windowMs: 10 * 60_000, limit: 400, standardHeaders: true, legacyHeaders: false });
+
+appRouter.post('/web-login', authLimiter, async (_req, res) => {
+  const username = botInfo.username ?? (bot ? (await bot.api.getMe()).username : null);
+  if (!username) throw badRequest('Bot sozlanmagan');
+  const w = await createWebLogin();
+  res.json({ id: w.id, secret: w.secret, expiresAt: w.expiresAt, botUrl: `https://t.me/${username}?start=${WEB_LOGIN_PREFIX}${w.id}` });
+});
+
+appRouter.post('/web-login/poll', pollLimiter, async (req, res) => {
+  const { id, secret } = z.object({ id: z.string().min(8).max(40), secret: z.string().min(16).max(80) }).parse(req.body);
+  const r = await pollWebLogin(id, secret);
+  if (r.status !== 'approved') {
+    res.json({ status: r.status });
+    return;
+  }
+  const emp = await db().get<Employee>(COL.employees, r.employeeId);
+  if (!emp || !emp.isActive || !emp.telegramId) throw unauthorized('Kirish huquqi bekor qilingan');
+  await db().update(COL.employees, emp.id, { lastSeenAt: new Date() });
+  res.json({ status: 'approved', token: issue(emp, '90d'), employee: publicEmployee(emp) });
+});
+
 // ---------------- Quyidagilar token talab qiladi ----------------
 appRouter.use(requireEmployee);
+
+/** Sayt / o'rnatilgan ilova: har ochilganda tokenni yangilash — faol xodim qayta kirmaydi */
+appRouter.post('/auth/refresh', async (req, res) => {
+  res.json({ token: issue(req.employee!, '90d'), employee: publicEmployee(req.employee!) });
+});
 
 async function markProgress(req: Request, step: RoadmapStep) {
   const emp = req.employee!;

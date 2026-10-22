@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
-import { BookOpen, Check, ChevronRight, Map as MapIcon, PlayCircle, Target, Timer, TrendingUp } from 'lucide-react';
+import { BookOpen, Check, ChevronRight, LogOut, Map as MapIcon, PlayCircle, Target, Timer, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { LEAD_STATUSES, STATUS_META, type LeadStatus } from '@shared/statuses';
@@ -11,7 +11,7 @@ import { Avatar, errorText, useToast } from '../../shared/ui';
 import { InstallCard } from '../components/InstallCard';
 import { ROADMAP } from '../guide';
 import { api, useSession } from '../session';
-import { haptic } from '../telegram';
+import { haptic, insideTelegram } from '../telegram';
 
 interface Stats {
   total: number;
@@ -26,7 +26,7 @@ const PERIODS = [
   { id: 'month', label: '30 kun' },
 ] as const;
 
-export function ProfilePage({ onReplayOnboarding }: { onReplayOnboarding: () => void }) {
+export function ProfilePage({ onReplayOnboarding, onLogout }: { onReplayOnboarding: () => void; onLogout: () => void }) {
   const { employee, refresh } = useSession();
   const toast = useToast();
   const [period, setPeriod] = useState<'today' | 'week' | 'month'>('today');
@@ -196,6 +196,18 @@ export function ProfilePage({ onReplayOnboarding }: { onReplayOnboarding: () => 
           <span className="flex-1 font-semibold">Tanishuvni qayta ko'rish</span>
           <ChevronRight className="h-4 w-4 text-muted" />
         </button>
+        {/* Sayt / o'rnatilgan ilovada — shu qurilmadan chiqish (Telegram ichida kirish akkauntga bog'liq) */}
+        {!insideTelegram && (
+          <button
+            onClick={() => window.confirm('Shu qurilmadan chiqasizmi? Qayta kirish uchun Telegram orqali tasdiqlaysiz.') && onLogout()}
+            className="flex w-full items-center gap-3 p-4 text-left text-danger active:bg-surface-2"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-danger/10">
+              <LogOut className="h-[18px] w-[18px]" />
+            </span>
+            <span className="flex-1 font-semibold">Chiqish</span>
+          </button>
+        )}
       </section>
       <p className="pb-4 text-center text-[11px] text-muted">Lidex · kalit …{employee.keyHint}</p>
     </div>

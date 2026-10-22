@@ -1,42 +1,37 @@
 import clsx from 'clsx';
-import { CircleCheckBig, MonitorSmartphone, Smartphone } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { CircleCheckBig, Copy, ExternalLink, EllipsisVertical, Share, Smartphone, SquarePlus } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { Button, Logo, useToast } from '../../shared/ui';
-import { addToHomeScreen, haptic, homeScreenStatus, type HomeScreenStatus } from '../telegram';
+import { openSiteInBrowser, promptInstall, siteUrl, useInstallState } from '../pwa';
+import { haptic, insideTelegram } from '../telegram';
 
 /**
- * "Telefonga ilova sifatida o'rnatish" — bosh ekranda Lidex belgisi paydo bo'ladi.
- * Belgi Mini App'ni Telegram ichida ochadi, shuning uchun xodim o'z Telegram akkaunti bilan avtomatik kiradi.
+ * "Telefonga ilova sifatida o'rnatish" — sayt (PWA) orqali.
+ * O'rnatilgan ilova bir marta "Telegram orqali kirish" bilan ulanadi va keyin doim o'z hisobida ochiladi.
  */
-export function InstallCard({ big = false, autoPrompt = false }: { big?: boolean; autoPrompt?: boolean }) {
+export function InstallCard({ big = false }: { big?: boolean }) {
   const toast = useToast();
-  const [status, setStatus] = useState<HomeScreenStatus | 'loading'>('loading');
+  const state = useInstallState();
 
-  useEffect(() => {
-    let alive = true;
-    void homeScreenStatus().then((s) => {
-      if (!alive) return;
-      setStatus(s);
-      // Bot'dagi "Telefonga o'rnatish" tugmasidan kelinganda — darhol taklif oynasi
-      if (autoPrompt && (s === 'missed' || s === 'unknown')) install();
-    });
-    return () => {
-      alive = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const install = () => {
+  const install = async () => {
     haptic.tap();
-    const ok = addToHomeScreen(() => {
+    if (await promptInstall()) {
       haptic.success();
-      setStatus('added');
-      toast("Lidex bosh ekranga qo'shildi");
-    });
-    if (!ok) setStatus('unsupported');
+      toast("Lidex telefoningizga o'rnatildi");
+    }
   };
 
-  if (status === 'loading') return null;
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(siteUrl());
+      haptic.success();
+      toast('Havola nusxalandi');
+    } catch {
+      toast(siteUrl(), 'info');
+    }
+  };
+
+  const installed = state === 'installed';
 
   return (
     <section className={clsx('card overflow-hidden shadow-soft', big ? 'p-6' : 'p-4')}>
@@ -51,35 +46,85 @@ export function InstallCard({ big = false, autoPrompt = false }: { big?: boolean
         </span>
         <div className="min-w-0 flex-1">
           <h2 className={clsx('font-display font-bold', big ? 'text-[20px]' : 'text-[15.5px]')}>
-            {status === 'added' ? "Lidex telefoningizga o'rnatilgan" : "Telefonga ilova sifatida o'rnatish"}
+            {installed ? "Lidex ilova sifatida ochilgan" : "Telefonga ilova sifatida o'rnatish"}
           </h2>
           <p className="mt-1 text-[13px] leading-relaxed text-muted">
-            {status === 'added'
-              ? "Bosh ekrandagi Lidex belgisini bossangiz, panel darhol ochiladi."
-              : "Bosh ekranda Lidex belgisi paydo bo'ladi — bir bosishda ochiladi. Kalit qayta so'ralmaydi: Telegram akkauntingiz orqali avtomatik kirasiz."}
+            {installed
+              ? "Bosh ekrandagi Lidex belgisidan oching — o'z hisobingizda darhol ochiladi."
+              : "Bosh ekranda Lidex belgisi paydo bo'ladi. Bir marta Telegram orqali tasdiqlaysiz, keyin kalit ham, kod ham so'ralmaydi."}
           </p>
         </div>
       </div>
 
-      {status === 'added' ? (
+      {installed ? (
         <p className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3.5 py-2.5 text-[13.5px] font-semibold text-good">
           <CircleCheckBig className="h-4 w-4" /> O'rnatilgan
         </p>
-      ) : status === 'unsupported' ? (
-        <div className="mt-4 rounded-xl bg-surface-2 px-3.5 py-3 text-[13px] leading-relaxed text-fg/80">
-          <p className="flex items-center gap-2 font-semibold">
-            <MonitorSmartphone className="h-4 w-4 text-muted" /> Bu qurilmada mavjud emas
-          </p>
-          <p className="mt-1 text-muted">
-            Panelni <b className="text-fg">telefondagi Telegram ilovasidan</b> oching va Telegram'ni oxirgi versiyaga yangilang. Kompyuter
-            versiyasida bu imkoniyat yo'q.
-          </p>
-        </div>
-      ) : (
+      ) : state === 'prompt' ? (
         <Button size={big ? 'lg' : 'md'} className="mt-4 w-full" onClick={install}>
-          <Smartphone className="h-4 w-4" /> Bosh ekranga qo'shish
+          <Smartphone className="h-4 w-4" /> Telefonga o'rnatish
         </Button>
+      ) : state === 'telegram' ? (
+        <>
+          <Hint>
+            {insideTelegram ? (
+              <>
+                Telegram ichida o'rnatib bo'lmaydi. Saytni <b className="text-fg">Chrome</b> yoki <b className="text-fg">Safari</b>da oching va o'sha yerda
+                o'rnating.
+              </>
+            ) : (
+              <>
+                Sayt Telegram ichida ochildi. Yuqoridagi <EllipsisVertical className="inline h-3.5 w-3.5 align-[-2px]" /> menyusidan{' '}
+                <b className="text-fg">"Brauzerda ochish"</b> ni tanlang (Chrome yoki Safari).
+              </>
+            )}
+          </Hint>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {insideTelegram ? (
+              <Button size="md" onClick={openSiteInBrowser}>
+                <ExternalLink className="h-4 w-4" /> Brauzerda ochish
+              </Button>
+            ) : null}
+            <Button size="md" variant="secondary" className={insideTelegram ? '' : 'col-span-2'} onClick={copy}>
+              <Copy className="h-4 w-4" /> Havolani nusxalash
+            </Button>
+          </div>
+        </>
+      ) : state === 'ios' ? (
+        <Hint>
+          <Step n={1}>
+            Safari pastidagi <Share className="inline h-4 w-4 align-[-3px] text-brand" /> <b className="text-fg">Ulashish</b> tugmasini bosing
+          </Step>
+          <Step n={2}>
+            <SquarePlus className="inline h-4 w-4 align-[-3px] text-brand" /> <b className="text-fg">"Bosh ekranga qo'shish"</b> ni tanlang
+          </Step>
+          <Step n={3}>
+            <b className="text-fg">"Qo'shish"</b> ni bosing — bosh ekranda Lidex paydo bo'ladi
+          </Step>
+        </Hint>
+      ) : (
+        <Hint>
+          <Step n={1}>
+            Brauzer menyusini oching: <EllipsisVertical className="inline h-4 w-4 align-[-3px] text-brand" />
+          </Step>
+          <Step n={2}>
+            <b className="text-fg">"Ilovani o'rnatish"</b> yoki <b className="text-fg">"Bosh ekranga qo'shish"</b> ni tanlang
+          </Step>
+        </Hint>
       )}
     </section>
+  );
+}
+
+function Hint({ children }: { children: ReactNode }) {
+  return <div className="mt-4 space-y-2 rounded-xl bg-surface-2 px-3.5 py-3 text-[13px] leading-relaxed text-fg/80">{children}</div>;
+}
+
+function Step({ n, children }: { n: number; children: ReactNode }) {
+  return (
+    <p className="flex gap-2.5">
+      <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/15 text-[11px] font-bold text-brand">{n}</span>
+      <span>{children}</span>
+    </p>
   );
 }

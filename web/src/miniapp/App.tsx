@@ -13,16 +13,16 @@ import { KeyScreen } from './pages/KeyScreen';
 import { LeadDetailPage } from './pages/LeadDetailPage';
 import { LeadsPage } from './pages/LeadsPage';
 import { MessagesPage } from './pages/MessagesPage';
-import { NoTelegram } from './pages/NoTelegram';
 import { Onboarding } from './pages/Onboarding';
 import { ProfilePage } from './pages/ProfilePage';
 import { RemindersPage } from './pages/RemindersPage';
-import { api, SessionCtx, setLogoutHandler, setToken, type Session } from './session';
+import { WebLogin } from './pages/WebLogin';
+import { api, getToken, SessionCtx, setLogoutHandler, setToken, type Session } from './session';
 import { getInitData, haptic, onAppActivated, tg } from './telegram';
 
 type Phase =
   | { kind: 'loading' }
-  | { kind: 'no-telegram' }
+  | { kind: 'web-login' }
   | { kind: 'need-key'; initData: string; firstName: string }
   | { kind: 'ready'; token: string; employee: Employee }
   | { kind: 'error'; error: unknown };
@@ -40,7 +40,21 @@ export function App() {
 
   const authenticate = useCallback(async () => {
     const initData = getInitData();
-    if (!initData) return setPhase({ kind: 'no-telegram' });
+    // Sayt / telefonga o'rnatilgan ilova: saqlangan token bilan avtomatik kirish
+    if (!initData) {
+      if (!getToken()) return setPhase({ kind: 'web-login' });
+      try {
+        const res = await api.post<{ token: string; employee: Employee }>('/auth/refresh');
+        setToken(res.token);
+        setPhase({ kind: 'ready', token: res.token, employee: res.employee });
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+          setToken(null);
+          setPhase({ kind: 'web-login' });
+        } else setPhase({ kind: 'error', error });
+      }
+      return;
+    }
     try {
       const res = await api.post<AuthResponse>('/auth', { initData });
       if (res.token && res.employee) {
@@ -63,7 +77,15 @@ export function App() {
   }, [authenticate, attempt]);
 
   if (phase.kind === 'loading') return <FullScreenLoader label="Yuklanmoqda..." />;
-  if (phase.kind === 'no-telegram') return <NoTelegram />;
+  if (phase.kind === 'web-login')
+    return (
+      <WebLogin
+        onSuccess={(token, employee) => {
+          setToken(token);
+          setPhase({ kind: 'ready', token, employee });
+        }}
+      />
+    );
   if (phase.kind === 'error')
     return (
       <div className="pt-10">
@@ -184,7 +206,7 @@ function Ready({
             <Route path="/messages" element={<Page><MessagesPage /></Page>} />
             <Route
               path="/profile"
-              element={<Page><ProfilePage onReplayOnboarding={() => onEmployee({ ...employee, onboardingDone: false })} /></Page>}
+              element={<Page><ProfilePage onReplayOnboarding={() => onEmployee({ ...employee, onboardingDone: false })} onLogout={onLogout} /></Page>}
             />
             <Route path="/guide" element={<Page><GuidePage /></Page>} />
             <Route path="/install" element={<Page><InstallPage /></Page>} />

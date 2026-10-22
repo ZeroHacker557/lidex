@@ -55,15 +55,22 @@ export function leadKeyboard(lead: WithId<Lead>, opts: { quick?: boolean } = {})
   return kb;
 }
 
+/** Sayt manzili (brauzerda ochiladi, telefonga ilova sifatida o'rnatiladi) */
+export const siteInstallUrl = `${webAppUrl}/install`;
+
 export function panelKeyboard(): InlineKeyboard | undefined {
   return webAppAvailable
-    ? new InlineKeyboard().webApp('📋 Panelni ochish', `${webAppUrl}/`).row().webApp("📲 Telefonga o'rnatish", `${webAppUrl}/install`)
+    ? new InlineKeyboard().webApp('📋 Panelni ochish', `${webAppUrl}/`).row().url("📲 Telefonga o'rnatish", siteInstallUrl)
     : undefined;
 }
 
-/** Faqat "Telefonga o'rnatish" tugmasi */
+/** Faqat "Saytni ochish" tugmasi (oddiy havola — Telegram ichida emas, brauzerda ochiladi) */
 export function installKeyboard(): InlineKeyboard | undefined {
-  return webAppAvailable ? new InlineKeyboard().webApp("📲 Telefonga o'rnatish", `${webAppUrl}/install`) : undefined;
+  return webAppAvailable ? new InlineKeyboard().url('🌐 Saytni ochish', siteInstallUrl) : undefined;
+}
+
+export function webLoginKeyboard(id: string): InlineKeyboard {
+  return new InlineKeyboard().text('✅ Ha, kiraman', `wl:${id}`).text("❌ Yo'q", 'wl:no');
 }
 
 export function staffMessageText(m: StaffMessage): string {
@@ -99,4 +106,30 @@ export const TEXT = {
     "4️⃣ Yakunlangan lid statusini panelda <b>Tahrirlash</b> orqali o'zgartirish mumkin.\n" +
     '5️⃣ Yangi lidga imkon qadar tez (15 daqiqa ichida) javob bering — rahbarlar kechikishni ko\'radi.\n\n' +
     "Buyruqlar: /panel — panel, /stats — bugungi natijalar, /install — telefonga o'rnatish, /help — yordam",
+  install: () =>
+    [
+      "📲 <b>Lidex'ni telefoningizga o'rnating</b>",
+      '',
+      "1️⃣ Pastdagi tugma bilan saytni oching. Telegram ichida ochilsa, <b>⋮</b> menyusidan <b>\"Brauzerda ochish\"</b> ni tanlang (Chrome yoki Safari).",
+      "2️⃣ Android: <b>\"Telefonga o'rnatish\"</b> tugmasini bosing. iPhone (Safari): <b>Ulashish ⬆️ → \"Bosh ekranga qo'shish\"</b>.",
+      "3️⃣ Bosh ekrandagi Lidex belgisini oching va <b>\"Telegram orqali kirish\"</b> ni bosing — shu botda bir marta tasdiqlaysiz.",
+      '',
+      "🔐 Kalit va kod qayta so'ralmaydi: keyingi safar ilova to'g'ridan-to'g'ri o'z hisobingizda ochiladi.",
+      '',
+      `Sayt manzili: ${esc(siteInstallUrl)}`,
+    ].join('\n'),
+  webLoginAsk: (name: string) =>
+    [
+      "🔐 <b>Saytga kirish so'rovi</b>",
+      '',
+      `<b>${esc(name)}</b>, siz hozir Lidex saytiga (yoki telefoningizdagi Lidex ilovasiga) kiryapsizmi?`,
+      '',
+      "Agar bu siz bo'lmasangiz — <b>\"Yo'q\"</b> ni bosing va hech kimga bu havolani bermang.",
+    ].join('\n'),
+  webLoginDone: "✅ <b>Kirish tasdiqlandi.</b>\n\nSaytga (ilovaga) qayting — o'z hisobingizga avtomatik kirasiz.",
+  webLoginExpired: "⌛️ Bu kirish so'rovi eskirgan. Saytda <b>\"Telegram orqali kirish\"</b> ni qayta bosing.",
+  webLoginDenied: '❌ Kirish rad etildi.',
+  webLoginNeedKey:
+    "🔑 Saytga kirish uchun avval Telegram akkauntingizni ulang: rahbaringiz bergan <b>kirish kalitini</b> shu yerga yuboring " +
+    "(masalan <code>LX-7KQ2-M9TD</code>). Keyin saytda <b>\"Telegram orqali kirish\"</b> ni qayta bosing.",
 };

@@ -27,8 +27,6 @@ interface TgWebApp {
   showConfirm?(msg: string, cb: (ok: boolean) => void): void;
   onEvent?(event: string, cb: (...args: never[]) => void): void;
   offEvent?(event: string, cb: (...args: never[]) => void): void;
-  addToHomeScreen?(): void;
-  checkHomeScreenStatus?(cb: (status: HomeScreenStatus) => void): void;
   setBottomBarColor?(c: string): void;
   BackButton: TgButton;
   HapticFeedback?: {
@@ -37,8 +35,6 @@ interface TgWebApp {
     selectionChanged(): void;
   };
 }
-
-export type HomeScreenStatus = 'unsupported' | 'unknown' | 'added' | 'missed';
 
 declare global {
   interface Window {
@@ -59,6 +55,8 @@ function applyTheme() {
   // Telegram'dan tashqarida SDK har doim "light" qaytaradi — u holda tizim sozlamasiga qaraymiz
   const scheme = tg?.initData ? tg.colorScheme : darkQuery.matches ? 'dark' : 'light';
   document.documentElement.dataset.theme = scheme;
+  // Sayt / o'rnatilgan ilova: telefon status paneli rangi
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', BG[scheme]);
   try {
     tg?.setHeaderColor?.(BG[scheme]);
     tg?.setBackgroundColor?.(BG[scheme]);
@@ -116,37 +114,4 @@ export function openTelegramUser(username: string) {
   const url = `https://t.me/${username}`;
   if (tg) tg.openTelegramLink(url);
   else window.open(url, '_blank');
-}
-
-// ---------- Bosh ekranga ilova sifatida qo'shish (Telegram 8.0+) ----------
-
-/** Joriy holat: added — o'rnatilgan, missed — hali yo'q, unsupported — bu qurilma/versiyada mavjud emas */
-export function homeScreenStatus(): Promise<HomeScreenStatus> {
-  return new Promise((resolve) => {
-    if (!tg?.initData || !tg.checkHomeScreenStatus || !tg.isVersionAtLeast?.('8.0')) return resolve('unsupported');
-    const timer = setTimeout(() => resolve('unknown'), 2500);
-    try {
-      tg.checkHomeScreenStatus((status) => {
-        clearTimeout(timer);
-        resolve(status);
-      });
-    } catch {
-      clearTimeout(timer);
-      resolve('unsupported');
-    }
-  });
-}
-
-/** Telegram'ning "Bosh ekranga qo'shish" oynasini ochadi. Qo'shilganda onAdded chaqiriladi */
-export function addToHomeScreen(onAdded?: () => void): boolean {
-  if (!tg?.addToHomeScreen || !tg.isVersionAtLeast?.('8.0')) return false;
-  if (onAdded) {
-    const handler = () => {
-      tg?.offEvent?.('homeScreenAdded', handler);
-      onAdded();
-    };
-    tg.onEvent?.('homeScreenAdded', handler);
-  }
-  tg.addToHomeScreen();
-  return true;
 }

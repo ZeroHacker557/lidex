@@ -6,9 +6,11 @@ import { BrowserRouter } from 'react-router-dom';
 import '../index.css';
 import { ToastProvider } from '../shared/ui';
 import { App } from './App';
+import { initPwa } from './pwa';
 import { initTelegram } from './telegram';
 
 initTelegram();
+initPwa();
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -6,19 +6,19 @@ import { useBackButton } from '../hooks';
 import { PageTitle } from './ui';
 
 const STEPS = [
-  { icon: Smartphone, title: "Bosh ekranga qo'shish", text: "Quyidagi tugmani bosing va Telegram oynasida tasdiqlang." },
-  { icon: MousePointerClick, title: 'Belgini bosing', text: "Telefoningiz bosh ekranida Lidex belgisi paydo bo'ladi." },
-  { icon: KeyRound, title: 'Avtomatik kirish', text: "Kalit qayta so'ralmaydi — Telegram akkauntingiz orqali o'z hisobingizga kirasiz." },
+  { icon: Smartphone, title: "Telefonga o'rnatish", text: "Yuqoridagi ko'rsatma bo'yicha Lidex'ni bosh ekranga qo'shing." },
+  { icon: MousePointerClick, title: 'Belgini bosing', text: "Telefoningiz bosh ekranida Lidex belgisi paydo bo'ladi — ilova kabi ochiladi." },
+  { icon: KeyRound, title: 'Bir marta tasdiqlash', text: "\"Telegram orqali kirish\" ni bosing va botda tasdiqlang. Keyin kalit ham, kod ham so'ralmaydi." },
 ];
 
-/** Bot'dagi "📲 Telefonga o'rnatish" tugmasi shu sahifani ochadi */
+/** Bot'dagi "📲 Telefonga o'rnatish" tugmasi saytda shu sahifani ochadi */
 export function InstallPage() {
   const back = useBackButton();
   const navigate = useNavigate();
   return (
     <div className="mx-auto max-w-xl space-y-4 px-4 pb-12 pt-5">
       <PageTitle title="Ilovani o'rnatish" subtitle="Lidex'ni telefoningizga ilova sifatida qo'shing" onBack={back} />
-      <InstallCard big autoPrompt />
+      <InstallCard big />
       <section className="card p-4 shadow-soft">
         <ol className="space-y-3.5">
           {STEPS.map((s, i) => (

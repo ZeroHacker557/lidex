@@ -72,4 +72,5 @@ export const COL = {
   messages: 'messages',
   counters: 'counters',
   inbox: 'inbox',
+  webLogins: 'webLogins',
 } as const;
