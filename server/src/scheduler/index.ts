@@ -173,18 +173,19 @@ export async function processDigest(now = new Date()) {
     ['createdAt', '>=', from],
     ['createdAt', '<', to],
   ] as const;
-  const [total, success, rejected, cancelled, open] = await Promise.all([
+  const [total, success, rejected, cancelled, fake, open] = await Promise.all([
     db().count(COL.leads, { where: [...range] }),
     db().count(COL.leads, { where: [...range, ['status', '==', 'success']] }),
     db().count(COL.leads, { where: [...range, ['status', '==', 'rejected']] }),
     db().count(COL.leads, { where: [...range, ['status', '==', 'cancelled']] }),
+    db().count(COL.leads, { where: [...range, ['status', '==', 'fake']] }),
     db().count(COL.leads, { where: [...range, ['status', 'in', ['new', 'no_answer', 'postponed']]] }),
   ]);
   if (!total) return;
-  const conv = Math.round((success / total) * 100);
+  const conv = total > fake ? Math.round((success / (total - fake)) * 100) : 0; // soxta lidlar konversiyaga kirmaydi
   await notifyAdmins(
     null,
-    `📊 <b>Kechagi hisobot</b>\n\nJami lidlar: <b>${total}</b>\n🟢 HA dedi: <b>${success}</b> (${conv}%)\n🟠 YO'Q dedi: <b>${rejected}</b>\n🔴 Bekor: <b>${cancelled}</b>\n⏳ Hali ochiq: <b>${open}</b>`,
+    `📊 <b>Kechagi hisobot</b>\n\nJami lidlar: <b>${total}</b>\n🟢 HA dedi: <b>${success}</b> (${conv}%)\n🟠 YO'Q dedi: <b>${rejected}</b>\n🔴 Bekor: <b>${cancelled}</b>${fake ? `\n🟣 Soxta: <b>${fake}</b>` : ''}\n⏳ Hali ochiq: <b>${open}</b>`,
   );
 }
 

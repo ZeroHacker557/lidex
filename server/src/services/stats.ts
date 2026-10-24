@@ -1,4 +1,4 @@
-import { LEAD_STATUSES, OPEN_STATUSES, type LeadStatus } from '../../../shared/statuses.js';
+import { conversionRate, LEAD_STATUSES, OPEN_STATUSES, type LeadStatus } from '../../../shared/statuses.js';
 import { COL, db, type Employee, type Filter, type Lead, type WithId } from '../db/index.js';
 import { addDays, localDateKey, startOfLocalDay } from '../lib/time.js';
 import { logger } from '../logger.js';
@@ -53,13 +53,14 @@ export async function dashboard({ scope, from, to, employees }: DashboardInput) 
     Promise.all(
       days.map(async (d) => {
         const w: Filter[] = [...scope, ['createdAt', '>=', d], ['createdAt', '<', addDays(d, 1)]];
-        const [total, success, rejected, cancelled] = await Promise.all([
+        const [total, success, rejected, cancelled, fake] = await Promise.all([
           db().count(COL.leads, { where: w }),
           db().count(COL.leads, { where: [...w, ['status', '==', 'success']] }),
           db().count(COL.leads, { where: [...w, ['status', '==', 'rejected']] }),
           db().count(COL.leads, { where: [...w, ['status', '==', 'cancelled']] }),
+          db().count(COL.leads, { where: [...w, ['status', '==', 'fake']] }),
         ]);
-        return { date: localDateKey(d), total, success, rejected, cancelled };
+        return { date: localDateKey(d), total, success, rejected, cancelled, fake };
       }),
     ),
     employeeStats(employees, range),
@@ -70,7 +71,7 @@ export async function dashboard({ scope, from, to, employees }: DashboardInput) 
     range: { from, to },
     total,
     byStatus,
-    conversion: total ? Math.round((byStatus.success / total) * 100) : 0,
+    conversion: conversionRate(byStatus),
     avgResponseSeconds: response,
     openNow,
     overdueReminders,
@@ -109,7 +110,7 @@ export async function employeeStats(employees: WithId<Employee>[], range: Filter
         lastSeenAt: e.lastSeenAt,
         total,
         byStatus,
-        conversion: total ? Math.round((byStatus.success / total) * 100) : 0,
+        conversion: conversionRate(byStatus),
         avgResponseSeconds: response,
         openNow,
         lateNew,

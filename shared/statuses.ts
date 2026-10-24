@@ -1,6 +1,6 @@
 // Lid statuslari — server va web uchun yagona manba.
 
-export const LEAD_STATUSES = ['new', 'no_answer', 'postponed', 'success', 'rejected', 'cancelled'] as const;
+export const LEAD_STATUSES = ['new', 'no_answer', 'postponed', 'success', 'rejected', 'cancelled', 'fake'] as const;
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
 
 export interface StatusMeta {
@@ -62,11 +62,25 @@ export const STATUS_META: Record<LeadStatus, StatusMeta> = {
     description: "Lid bekor qilindi (noto'g'ri raqam, spam, takroriy va h.k.)",
     final: true,
   },
+  fake: {
+    label: "Soxta lid — ariza qoldirmagan",
+    short: 'Soxta',
+    emoji: '🟣',
+    color: '#8b5cf6',
+    description: "Mijoz o'zi ariza qoldirmagan: tanishi hazil uchun yozib yuborgan (Instagram o'yini va h.k.). Konversiyaga kirmaydi",
+    final: true,
+  },
 };
 
 /** Xodim hali ishlashi kerak bo'lgan statuslar */
 export const OPEN_STATUSES: LeadStatus[] = ['new', 'no_answer', 'postponed'];
-export const FINAL_STATUSES: LeadStatus[] = ['success', 'rejected', 'cancelled'];
+export const FINAL_STATUSES: LeadStatus[] = ['success', 'rejected', 'cancelled', 'fake'];
+
+/** Konversiya: HA dedi / haqiqiy lidlar. Soxta lidlar (ariza qoldirmaganlar) hisobga olinmaydi */
+export function conversionRate(byStatus: Partial<Record<LeadStatus, number>>): number {
+  const genuine = LEAD_STATUSES.reduce((a, s) => a + (byStatus[s] ?? 0), 0) - (byStatus.fake ?? 0);
+  return genuine > 0 ? Math.round(((byStatus.success ?? 0) / genuine) * 100) : 0;
+}
 
 export function isLeadStatus(v: unknown): v is LeadStatus {
   return typeof v === 'string' && (LEAD_STATUSES as readonly string[]).includes(v);

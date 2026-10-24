@@ -22,7 +22,7 @@ interface Detail {
   messages: StaffMessage[];
 }
 
-const ACTIONS: LeadStatus[] = ['success', 'rejected', 'no_answer', 'postponed', 'cancelled'];
+const ACTIONS: LeadStatus[] = ['success', 'rejected', 'no_answer', 'postponed', 'cancelled', 'fake'];
 
 export function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -261,7 +261,6 @@ export function LeadDetailPage() {
                         onClick={() => setStatus(s)}
                         className={clsx(
                           'flex min-h-[60px] items-center gap-2.5 rounded-2xl px-3 text-left text-[13.5px] font-bold leading-tight transition-shadow disabled:opacity-50',
-                          s === 'cancelled' && 'col-span-2 justify-center',
                           current && 'shadow-card',
                         )}
                         style={{
@@ -281,6 +280,7 @@ export function LeadDetailPage() {
                           {(s === 'success' || s === 'rejected') && (
                             <span className="block text-[11px] font-semibold opacity-75">Javob berildi</span>
                           )}
+                          {s === 'fake' && <span className="block text-[11px] font-semibold opacity-75">Ariza qoldirmagan</span>}
                         </span>
                       </motion.button>
                     );

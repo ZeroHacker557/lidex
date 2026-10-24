@@ -30,6 +30,7 @@ export const STATUS_CODES: Record<string, { status: LeadStatus; postpone?: 'tomo
   r: { status: 'rejected' },
   n: { status: 'no_answer' },
   c: { status: 'cancelled' },
+  f: { status: 'fake' },
   pt: { status: 'postponed', postpone: 'tomorrow' },
   pn: { status: 'postponed', postpone: 'nodate' },
 };
@@ -102,6 +103,7 @@ export const TEXT = {
     '1️⃣ Yangi lid kelganda bot xabar yuboradi.\n' +
     "2️⃣ Mijozga qo'ng'iroq qiling va statusni belgilang:\n" +
     '   🟢 HA dedi · 🟠 YO\'Q dedi · ⚪️ Ko\'tarmadi\n   🟡 Keyinga qoldirildi · 🔴 Bekor qilindi\n' +
+    "   🟣 Soxta lid — mijoz ariza qoldirmagan, tanishi hazil uchun yozgan\n" +
     "3️⃣ \"Keyinga\" — sana tanlasangiz o'sha kuni, sanasiz bo'lsa har 2 kunda eslataman.\n" +
     "4️⃣ Yakunlangan lid statusini panelda <b>Tahrirlash</b> orqali o'zgartirish mumkin.\n" +
     '5️⃣ Yangi lidga imkon qadar tez (15 daqiqa ichida) javob bering — rahbarlar kechikishni ko\'radi.\n\n' +

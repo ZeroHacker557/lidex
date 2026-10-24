@@ -1,4 +1,4 @@
-import { Ban, CircleCheckBig, CircleX, Clock3, PhoneMissed, Sparkles, type LucideIcon } from 'lucide-react';
+import { Ban, CircleCheckBig, CircleX, Clock3, Ghost, PhoneMissed, Sparkles, type LucideIcon } from 'lucide-react';
 import type { LeadStatus } from '@shared/statuses';
 
 export const STATUS_ICON: Record<LeadStatus, LucideIcon> = {
@@ -8,4 +8,5 @@ export const STATUS_ICON: Record<LeadStatus, LucideIcon> = {
   success: CircleCheckBig,
   rejected: CircleX,
   cancelled: Ban,
+  fake: Ghost,
 };

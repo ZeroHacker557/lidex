@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { conversionRate, FINAL_STATUSES, OPEN_STATUSES } from '../../../shared/statuses.js';
 import { test } from 'node:test';
 import { COL, db, setStore, type Employee, type Group, type InboxItem, type Lead, type LeadEvent, type WithId } from '../db/index.js';
 import { MemoryStore } from '../db/memory.js';
@@ -158,4 +159,12 @@ test('bulkAssign: guruhdagi barcha lidlar yangi xodimga o\'tadi, tarixda qoladi'
   assert.ok(leads.every((l) => l.assignedEmployeeId === fresh));
   const ev = await store.query<LeadEvent>(COL.events, { where: [['leadId', '==', first.id], ['type', '==', 'reassigned']] });
   assert.equal(ev.length, 1);
+});
+
+test("soxta lid: yakuniy status, konversiyaga kirmaydi", async () => {
+  // 10 ta lid: 3 HA dedi, 4 soxta -> konversiya 3 / (10 - 4) = 50%
+  assert.equal(conversionRate({ new: 2, success: 3, rejected: 1, fake: 4 }), 50);
+  assert.equal(conversionRate({ fake: 5 }), 0);
+  assert.ok(FINAL_STATUSES.includes('fake'));
+  assert.ok(!OPEN_STATUSES.includes('fake'));
 });

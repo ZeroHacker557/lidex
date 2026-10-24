@@ -2,7 +2,7 @@
 import { Router, type Request } from 'express';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
-import { LEAD_STATUSES, OPEN_STATUSES, type LeadStatus } from '../../../../shared/statuses.js';
+import { conversionRate, LEAD_STATUSES, OPEN_STATUSES, type LeadStatus } from '../../../../shared/statuses.js';
 import { config } from '../../config.js';
 import { COL, db, type Employee, type Filter, type Group, type Lead, type LeadEvent, type RoadmapStep, type StaffMessage } from '../../db/index.js';
 import { badRequest, notFound, unauthorized } from '../../lib/errors.js';
@@ -290,13 +290,13 @@ appRouter.get('/stats', async (req, res) => {
     // Firestore average() son bo'lmagan (null) qiymatlarni hisobga olmaydi
     safeAvgResponse(base),
   ]);
-  const byStatus = Object.fromEntries(LEAD_STATUSES.map((s, i) => [s, counts[i]]));
+  const byStatus = Object.fromEntries(LEAD_STATUSES.map((s, i) => [s, counts[i]])) as Record<LeadStatus, number>;
   const total = counts.reduce((a, b) => a + b, 0);
   res.json({
     period,
     total,
     byStatus,
-    conversion: total ? Math.round(((byStatus.success ?? 0) / total) * 100) : 0,
+    conversion: conversionRate(byStatus),
     avgResponseSeconds: response,
   });
 });

@@ -11,6 +11,7 @@ export interface DailyPoint {
   success: number;
   rejected: number;
   cancelled: number;
+  fake: number;
 }
 
 const SUCCESS = STATUS_META.success.color;
@@ -128,7 +129,8 @@ export function DailyChart({ data }: { data: DailyPoint[] }) {
               <Row label="HA dedi" value={h.success} color={SUCCESS} />
               <Row label="YO'Q dedi" value={h.rejected} color={STATUS_META.rejected.color} />
               <Row label="Bekor" value={h.cancelled} color={STATUS_META.cancelled.color} />
-              <Row label="Jarayonda" value={h.total - h.success - h.rejected - h.cancelled} color={STATUS_META.new.color} />
+              <Row label="Soxta" value={h.fake ?? 0} color={STATUS_META.fake.color} />
+              <Row label="Jarayonda" value={h.total - h.success - h.rejected - h.cancelled - (h.fake ?? 0)} color={STATUS_META.new.color} />
             </motion.div>
           )}
         </AnimatePresence>

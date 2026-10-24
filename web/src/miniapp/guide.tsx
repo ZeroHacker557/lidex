@@ -16,7 +16,7 @@ export interface GuideStep {
   body: ReactNode;
 }
 
-const ORDER: LeadStatus[] = ['new', 'success', 'rejected', 'no_answer', 'postponed', 'cancelled'];
+const ORDER: LeadStatus[] = ['new', 'success', 'rejected', 'no_answer', 'postponed', 'cancelled', 'fake'];
 
 export function StatusLegend() {
   return (

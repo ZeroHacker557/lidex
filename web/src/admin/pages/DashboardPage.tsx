@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
-import { Activity, AlarmClock, BarChart3, CircleDashed, Layers, PieChart, Timer, TriangleAlert, TrendingUp, UserX, UsersRound } from 'lucide-react';
+import { Activity, AlarmClock, BarChart3, CircleDashed, Ghost, Layers, PieChart, Timer, TriangleAlert, TrendingUp, UserX, UsersRound } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { EVENT_LABELS, STATUS_META, type LeadStatus } from '@shared/statuses';
@@ -33,7 +33,7 @@ const PERIODS = [
   { value: 7, label: '7 kun' },
   { value: 30, label: '30 kun' },
 ];
-const COLS: LeadStatus[] = ['new', 'success', 'rejected', 'no_answer', 'postponed', 'cancelled'];
+const COLS: LeadStatus[] = ['new', 'success', 'rejected', 'no_answer', 'postponed', 'cancelled', 'fake'];
 
 export function DashboardPage() {
   const { admin } = useAdmin();
@@ -82,21 +82,32 @@ export function DashboardPage() {
 
       {q.isError && <ErrorBox error={q.error} onRetry={() => q.refetch()} />}
       {!d && !q.isError && (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
-          {Array.from({ length: 6 }, (_, i) => (
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-7">
+          {Array.from({ length: 7 }, (_, i) => (
             <Skeleton key={i} className="h-[118px] rounded-2xl" />
           ))}
         </div>
       )}
       {d && (
         <div className={clsx('space-y-5 transition-opacity', q.isFetching && q.isPlaceholderData && 'opacity-60')}>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-7">
             <KpiTile icon={Layers} label="Jami lid" value={d.total} sub={PERIODS.find((p) => p.value === days)?.label} delay={0} />
-            <KpiTile icon={TrendingUp} tone="good" label="Konversiya" value={d.conversion} suffix="%" sub={`${d.byStatus.success} ta HA dedi`} delay={0.04} />
+            <KpiTile icon={TrendingUp} tone="good" label="Konversiya" value={d.conversion} suffix="%" sub={`${d.byStatus.success} ta HA dedi · soxtalarsiz`} delay={0.04} />
             <KpiTile icon={Timer} tone="info" label="O'rtacha javob" value={duration(d.avgResponseSeconds)} sub="birinchi amalgacha" delay={0.08} />
             <KpiTile icon={CircleDashed} tone="violet" label="Hozir ochiq" value={d.openNow} sub="yangi · ko'tarmadi · keyinga" delay={0.12} />
             <KpiTile icon={AlarmClock} tone="warning" label="Muddati o'tgan" value={d.overdueReminders} sub="keyinga qoldirilganlar" delay={0.16} />
             <KpiTile icon={UserX} tone="danger" label="Biriktirilmagan" value={d.unassigned} sub={d.unassigned ? 'xodimga biriktiring' : 'hammasi taqsimlangan'} delay={0.2} />
+            {/* Ariza qoldirmagan (hazil uchun yozilgan) lidlar — reklama sifatini ko'rsatadi */}
+            <button onClick={() => goLeads('fake')} className="text-left" title="Soxta lidlarni ko'rish">
+              <KpiTile
+                icon={Ghost}
+                tone="violet"
+                label="Soxta lidlar"
+                value={d.byStatus.fake ?? 0}
+                sub={`${d.total ? Math.round(((d.byStatus.fake ?? 0) / d.total) * 100) : 0}% · ariza qoldirmagan`}
+                delay={0.24}
+              />
+            </button>
           </div>
 
           <div className="grid gap-5 xl:grid-cols-3">
