@@ -3,9 +3,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Flag, History, MessageSquareWarning, Phone, StickyNote, X } from 'lucide-react';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { LEAD_STATUSES, STATUS_META, type LeadStatus } from '@shared/statuses';
+import { LEAD_STATUSES, STATUS_META, type Industry, type LeadStatus } from '@shared/statuses';
 import { duration, formatPhone, fullDate, smartDate, tashkentDateKey, tashkentIso } from '../../shared/format';
 import { ease, spring } from '../../shared/motion';
+import { IndustryPicker } from '../../shared/IndustryPicker';
 import { STATUS_ICON } from '../../shared/statusIcons';
 import { Timeline } from '../../shared/Timeline';
 import type { Employee, Lead, LeadEvent, StaffMessage } from '../../shared/types';
@@ -69,6 +70,11 @@ function LeadDrawer({ id }: { id: string }) {
       setNote('');
       done("Status o'zgartirildi");
     },
+    onError: (e) => toast(errorText(e), 'error'),
+  });
+  const setIndustry = useMutation({
+    mutationFn: (industry: Industry | null) => api.put(`/leads/${id}/industry`, { industry }),
+    onSuccess: (_d, v) => done(v ? 'Soha belgilandi' : 'Soha olib tashlandi'),
     onError: (e) => toast(errorText(e), 'error'),
   });
   const flag = useMutation({
@@ -187,6 +193,11 @@ function LeadDrawer({ id }: { id: string }) {
                       </option>
                     ))}
                 </Select>
+              </div>
+
+              <div className="grid gap-1.5">
+                <span className="label !mb-0">Soha</span>
+                <IndustryPicker value={lead.industry} onChange={(v) => setIndustry.mutate(v)} disabled={setIndustry.isPending} />
               </div>
 
               <div className="grid gap-1.5">

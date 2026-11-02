@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlarmClock, ArrowLeft, ChevronDown, Copy, Flag, Megaphone, Pencil, Phone, Send, StickyNote } from 'lucide-react';
+import { AlarmClock, ArrowLeft, Building2, ChevronDown, Copy, Flag, Megaphone, Pencil, Phone, Send, StickyNote } from 'lucide-react';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { STATUS_META, type LeadStatus } from '@shared/statuses';
+import { REMINDER_STATUSES, STATUS_META, type Industry, type LeadStatus } from '@shared/statuses';
 import { formatPhone, fullDate, smartDate, timeAgo } from '../../shared/format';
 import { CheckDraw, ease, spring } from '../../shared/motion';
+import { IndustryPicker } from '../../shared/IndustryPicker';
 import { STATUS_ICON } from '../../shared/statusIcons';
 import { Timeline } from '../../shared/Timeline';
 import type { Lead, LeadEvent, StaffMessage } from '../../shared/types';
@@ -22,7 +23,15 @@ interface Detail {
   messages: StaffMessage[];
 }
 
-const ACTIONS: LeadStatus[] = ['success', 'rejected', 'no_answer', 'postponed', 'cancelled', 'fake'];
+const ACTIONS: LeadStatus[] = ['success', 'rejected', 'thinking', 'postponed', 'no_answer', 'cancelled', 'fake'];
+const ACTION_LABEL: Partial<Record<LeadStatus, [string, string?]>> = {
+  success: ['HA dedi', 'Javob berildi'],
+  rejected: ["YO'Q dedi", 'Javob berildi'],
+  thinking: ["O'ylab ko'radi", "Narx so'radi"],
+  postponed: ['Keyinga qoldirish'],
+  cancelled: ['Bekor qilish'],
+  fake: ['Soxta', 'Ariza qoldirmagan'],
+};
 
 export function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -50,6 +59,15 @@ export function LeadDetailPage() {
     void qc.invalidateQueries({ queryKey: ['summary'] });
     void qc.invalidateQueries({ queryKey: ['reminders'] });
   };
+
+  const industry = useMutation({
+    mutationFn: (value: Industry | null) => api.put<{ lead: Lead }>(`/leads/${id}/industry`, { industry: value }),
+    onSuccess: ({ lead }) => {
+      haptic.select();
+      onSaved(lead);
+    },
+    onError: (e) => toast(errorText(e), 'error'),
+  });
 
   const status = useMutation({
     mutationFn: (body: { status: LeadStatus; postponedUntil?: string | null; note?: string | null }) =>
@@ -192,11 +210,17 @@ export function LeadDetailPage() {
             {m.text}
           </Notice>
         ))}
-        {(lead.status === 'postponed' || lead.status === 'no_answer') && lead.nextReminderAt && (
+        {REMINDER_STATUSES.includes(lead.status) && lead.nextReminderAt && (
           <Notice
             tone={reminderOverdue ? 'red' : 'amber'}
             icon={<AlarmClock className="h-5 w-5" />}
-            title={lead.status === 'postponed' && !lead.postponedUntil ? `Har ${intervalDays} kunda eslatiladi` : "Qayta qo'ng'iroq"}
+            title={
+              lead.status === 'thinking'
+                ? "Narxni o'ylab ko'ryapti — qayta bog'laning"
+                : lead.status === 'postponed' && !lead.postponedUntil
+                  ? `Har ${intervalDays} kunda eslatiladi`
+                  : "Qayta qo'ng'iroq"
+            }
           >
             Keyingi eslatma: <b>{smartDate(lead.nextReminderAt)}</b>
           </Notice>
@@ -261,6 +285,7 @@ export function LeadDetailPage() {
                         onClick={() => setStatus(s)}
                         className={clsx(
                           'flex min-h-[60px] items-center gap-2.5 rounded-2xl px-3 text-left text-[13.5px] font-bold leading-tight transition-shadow disabled:opacity-50',
+                          i === ACTIONS.length - 1 && ACTIONS.length % 2 === 1 && 'col-span-2 justify-center',
                           current && 'shadow-card',
                         )}
                         style={{
@@ -276,11 +301,8 @@ export function LeadDetailPage() {
                           <Icon className="h-[18px] w-[18px]" strokeWidth={2.4} />
                         </span>
                         <span>
-                          <span className="block">{s === 'postponed' ? 'Keyinga qoldirish' : s === 'cancelled' ? 'Bekor qilish' : m.short}</span>
-                          {(s === 'success' || s === 'rejected') && (
-                            <span className="block text-[11px] font-semibold opacity-75">Javob berildi</span>
-                          )}
-                          {s === 'fake' && <span className="block text-[11px] font-semibold opacity-75">Ariza qoldirmagan</span>}
+                          <span className="block">{ACTION_LABEL[s]?.[0] ?? m.short}</span>
+                          {ACTION_LABEL[s]?.[1] && <span className="block text-[11px] font-semibold opacity-75">{ACTION_LABEL[s]![1]}</span>}
                         </span>
                       </motion.button>
                     );
@@ -298,6 +320,15 @@ export function LeadDetailPage() {
               </motion.div>
             )}
           </>
+        </section>
+
+        {/* Soha */}
+        <section className="card p-4 shadow-soft">
+          <h2 className="mb-3 flex items-center gap-2 font-display text-[15px] font-bold">
+            <Building2 className="h-4 w-4 text-brand" /> Soha
+            <span className="text-[12px] font-medium text-muted">— mijoz kompaniyasi faoliyati</span>
+          </h2>
+          <IndustryPicker value={lead.industry} onChange={(v) => industry.mutate(v)} disabled={industry.isPending} />
         </section>
 
         {/* Ma'lumotlar */}

@@ -2,7 +2,7 @@
 import { Router, type Request } from 'express';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
-import { conversionRate, LEAD_STATUSES, OPEN_STATUSES, type LeadStatus } from '../../../../shared/statuses.js';
+import { conversionRate, INDUSTRIES, LEAD_STATUSES, OPEN_STATUSES, REMINDER_STATUSES, type LeadStatus } from '../../../../shared/statuses.js';
 import { config } from '../../config.js';
 import { COL, db, type Employee, type Filter, type Group, type Lead, type LeadEvent, type RoadmapStep, type StaffMessage } from '../../db/index.js';
 import { badRequest, notFound, unauthorized } from '../../lib/errors.js';
@@ -10,7 +10,7 @@ import { searchTokenFor } from '../../lib/parser.js';
 import { signToken, verifyInitData, type TelegramWebAppUser } from '../../lib/security.js';
 import { addDays, atLocal, startOfLocalDay } from '../../lib/time.js';
 import { bindEmployeeByKey, findEmployeeByTelegram, publicEmployee } from '../../services/employees.js';
-import { addNote, changeStatus, getLeadOr404, markViewed, toLeadDto } from '../../services/leads.js';
+import { addNote, changeStatus, getLeadOr404, markViewed, setIndustry, toLeadDto } from '../../services/leads.js';
 import { markMessageRead } from '../../services/messages.js';
 import { emitToAdmins } from '../../services/realtime.js';
 import { createWebLogin, pollWebLogin, WEB_LOGIN_PREFIX } from '../../services/weblogin.js';
@@ -142,7 +142,7 @@ appRouter.get('/summary', async (req, res) => {
   const [counts, dueToday, unread] = await Promise.all([
     Promise.all(LEAD_STATUSES.map((s) => db().count(COL.leads, { where: [base, ['status', '==', s]] }))),
     db().count(COL.leads, {
-      where: [base, ['status', 'in', ['postponed', 'no_answer']], ['nextReminderAt', '<', endOfDay]],
+      where: [base, ['status', 'in', REMINDER_STATUSES], ['nextReminderAt', '<', endOfDay]],
     }),
     db().count(COL.messages, { where: [['employeeId', '==', id], ['readAt', '==', null]] }),
   ]);
@@ -202,7 +202,7 @@ appRouter.get('/reminders', async (req, res) => {
   const leads = await db().query<Lead>(COL.leads, {
     where: [
       ['assignedEmployeeId', '==', req.employee!.id],
-      ['status', 'in', ['postponed', 'no_answer']],
+      ['status', 'in', REMINDER_STATUSES],
     ],
     orderBy: [['nextReminderAt', 'asc']],
     limit: 200,
@@ -245,6 +245,12 @@ appRouter.post('/leads/:id/status', async (req, res) => {
   await markProgress(req, 'firstStatus');
   if (body.status === 'postponed') await markProgress(req, 'firstPostpone');
   if (body.note) await markProgress(req, 'firstNote');
+  res.json({ lead: toLeadDto(lead) });
+});
+
+appRouter.put('/leads/:id/industry', async (req, res) => {
+  const { industry } = z.object({ industry: z.enum(INDUSTRIES).nullable() }).parse(req.body);
+  const lead = await setIndustry(req.params.id!, employeeActor(req), industry);
   res.json({ lead: toLeadDto(lead) });
 });
 

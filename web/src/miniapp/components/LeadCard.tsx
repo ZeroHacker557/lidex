@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion';
 import { AlarmClock, ChevronRight, Flag, Phone, Repeat2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { STATUS_META } from '@shared/statuses';
+import { REMINDER_STATUSES, STATUS_META } from '@shared/statuses';
 import { formatPhone, smartDate, timeAgo } from '../../shared/format';
+import { IndustryTag } from '../../shared/IndustryPicker';
 import { STATUS_ICON } from '../../shared/statusIcons';
 import type { Lead } from '../../shared/types';
 import { Skeleton } from '../../shared/ui';
@@ -12,7 +13,7 @@ export function LeadCard({ lead, showReminder }: { lead: Lead; showReminder?: bo
   const navigate = useNavigate();
   const meta = STATUS_META[lead.status];
   const Icon = STATUS_ICON[lead.status];
-  const reminder = lead.status === 'postponed' || lead.status === 'no_answer' ? lead.nextReminderAt : null;
+  const reminder = REMINDER_STATUSES.includes(lead.status) ? lead.nextReminderAt : null;
   const overdue = reminder && new Date(reminder).getTime() < Date.now();
   const isNew = lead.status === 'new';
 
@@ -44,6 +45,7 @@ export function LeadCard({ lead, showReminder }: { lead: Lead; showReminder?: bo
           <span className="rounded-md px-1.5 py-0.5 font-semibold" style={{ backgroundColor: `${meta.color}14`, color: meta.color }}>
             {meta.short}
           </span>
+          <IndustryTag industry={lead.industry} />
           <span>#{lead.seq}</span>
           <span className="h-1 w-1 rounded-full bg-muted/40" />
           <span>{timeAgo(lead.createdAt)}</span>

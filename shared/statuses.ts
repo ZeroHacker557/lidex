@@ -1,6 +1,6 @@
 // Lid statuslari — server va web uchun yagona manba.
 
-export const LEAD_STATUSES = ['new', 'no_answer', 'postponed', 'success', 'rejected', 'cancelled', 'fake'] as const;
+export const LEAD_STATUSES = ['new', 'no_answer', 'thinking', 'postponed', 'success', 'rejected', 'cancelled', 'fake'] as const;
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
 
 export interface StatusMeta {
@@ -28,6 +28,14 @@ export const STATUS_META: Record<LeadStatus, StatusMeta> = {
     emoji: '⚪️',
     color: '#64748b',
     description: "Qo'ng'iroq qilindi, lekin mijoz javob bermadi. Bot qayta eslatadi",
+    final: false,
+  },
+  thinking: {
+    label: "O'ylab ko'radi — narx so'radi",
+    short: "O'ylayapti",
+    emoji: '🔷',
+    color: '#06b6d4',
+    description: "Narx yuborildi, mijoz o'ylab ko'rmoqchi. Bot ertasi kuni, keyin har N kunda qayta bog'lanishni eslatadi",
     final: false,
   },
   postponed: {
@@ -73,7 +81,11 @@ export const STATUS_META: Record<LeadStatus, StatusMeta> = {
 };
 
 /** Xodim hali ishlashi kerak bo'lgan statuslar */
-export const OPEN_STATUSES: LeadStatus[] = ['new', 'no_answer', 'postponed'];
+export const OPEN_STATUSES: LeadStatus[] = ['new', 'no_answer', 'thinking', 'postponed'];
+/** Bot eslatma yuboradigan statuslar */
+export const REMINDER_STATUSES: LeadStatus[] = ['no_answer', 'thinking', 'postponed'];
+/** "O'ylab ko'radi": birinchi eslatma necha kundan keyin (keyingilari — guruhdagi "har N kunda") */
+export const THINKING_FIRST_REMINDER_DAYS = 1;
 export const FINAL_STATUSES: LeadStatus[] = ['success', 'rejected', 'cancelled', 'fake'];
 
 /** Konversiya: HA dedi / haqiqiy lidlar. Soxta lidlar (ariza qoldirmaganlar) hisobga olinmaydi */
@@ -98,7 +110,8 @@ export type EventType =
   | 'admin_message'
   | 'flagged'
   | 'unflagged'
-  | 'viewed';
+  | 'viewed'
+  | 'industry_changed';
 
 export const EVENT_LABELS: Record<EventType, string> = {
   created: 'Lid tushdi',
@@ -113,7 +126,45 @@ export const EVENT_LABELS: Record<EventType, string> = {
   flagged: 'Admin belgiladi',
   unflagged: 'Belgi olib tashlandi',
   viewed: 'Xodim ko\'rdi',
+  industry_changed: 'Soha belgilandi',
 };
+
+// ---------------- Soha (mijoz kompaniyasi faoliyati) ----------------
+
+export const INDUSTRIES = [
+  'food',
+  'horeca',
+  'retail',
+  'production',
+  'construction',
+  'services',
+  'beauty',
+  'medicine',
+  'education',
+  'logistics',
+  'it',
+  'other',
+] as const;
+export type Industry = (typeof INDUSTRIES)[number];
+
+export const INDUSTRY_META: Record<Industry, { label: string; emoji: string }> = {
+  food: { label: 'Oziq-ovqat', emoji: '🍎' },
+  horeca: { label: 'Restoran / kafe', emoji: '🍽️' },
+  retail: { label: "Savdo / do'kon", emoji: '🛒' },
+  production: { label: 'Ishlab chiqarish', emoji: '🏭' },
+  construction: { label: 'Qurilish', emoji: '🏗️' },
+  services: { label: "Xizmat ko'rsatish", emoji: '🛠️' },
+  beauty: { label: "Go'zallik", emoji: '💅' },
+  medicine: { label: 'Tibbiyot', emoji: '🏥' },
+  education: { label: "Ta'lim", emoji: '🎓' },
+  logistics: { label: 'Logistika', emoji: '🚚' },
+  it: { label: 'IT', emoji: '💻' },
+  other: { label: 'Boshqa', emoji: '📦' },
+};
+
+export function isIndustry(v: unknown): v is Industry {
+  return typeof v === 'string' && (INDUSTRIES as readonly string[]).includes(v);
+}
 
 export type ActorType = 'employee' | 'admin' | 'system';
 

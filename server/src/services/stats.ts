@@ -1,4 +1,4 @@
-import { conversionRate, LEAD_STATUSES, OPEN_STATUSES, type LeadStatus } from '../../../shared/statuses.js';
+import { conversionRate, INDUSTRIES, INDUSTRY_META, LEAD_STATUSES, OPEN_STATUSES, type Industry, type LeadStatus } from '../../../shared/statuses.js';
 import { COL, db, type Employee, type Filter, type Lead, type WithId } from '../db/index.js';
 import { addDays, localDateKey, startOfLocalDay } from '../lib/time.js';
 import { logger } from '../logger.js';
@@ -40,8 +40,17 @@ export async function dashboard({ scope, from, to, employees }: DashboardInput) 
   const days: Date[] = [];
   for (let d = startOfLocalDay(from); d < to && days.length < 31; d = addDays(d, 1)) days.push(d);
 
-  const [byStatus, response, openNow, overdueReminders, unassigned, flagged, daily, perEmployee] = await Promise.all([
+  const [byStatus, byIndustryCounts, response, openNow, overdueReminders, unassigned, flagged, daily, perEmployee] = await Promise.all([
     countByStatus(range),
+    // Sohalar bo'yicha (faqat soha belgilangan lidlar). Indeks hali qurilayotgan bo'lsa — dashboard yiqilmasin
+    Promise.all(
+      INDUSTRIES.map((i) =>
+        db().count(COL.leads, { where: [...scope, ['industry', '==', i], ['createdAt', '>=', from], ['createdAt', '<', to]] }),
+      ),
+    ).catch((err) => {
+      logger.warn({ err: (err as Error).message?.slice(0, 160) }, "Sohalar bo'yicha hisoblab bo'lmadi");
+      return INDUSTRIES.map(() => 0);
+    }),
     safeAvgResponse(range),
     db().count(COL.leads, { where: [...scope, ['status', 'in', OPEN_STATUSES]] }),
     // Belgilangan sanasi o'tib ketgan, lekin hali ishlanmagan lidlar
@@ -72,6 +81,7 @@ export async function dashboard({ scope, from, to, employees }: DashboardInput) 
     total,
     byStatus,
     conversion: conversionRate(byStatus),
+    byIndustry: Object.fromEntries(INDUSTRIES.map((i, n) => [i, byIndustryCounts[n]])) as Record<Industry, number>,
     avgResponseSeconds: response,
     openNow,
     overdueReminders,
@@ -121,7 +131,7 @@ export async function employeeStats(employees: WithId<Employee>[], range: Filter
 }
 
 export function leadsCsv(leads: WithId<Lead>[], employeeNames: Map<string, string>): string {
-  const head = ['#', 'Sana', 'Guruh', 'Ism', 'Telefon', 'Status', 'Xodim', 'Eslatma', 'Javob vaqti (daq)', 'Izoh', "Qo'shimcha"];
+  const head = ['#', 'Sana', 'Guruh', 'Ism', 'Telefon', 'Status', 'Soha', 'Xodim', 'Eslatma', 'Javob vaqti (daq)', 'Izoh', "Qo'shimcha"];
   const cell = (v: unknown) => {
     const s = v === null || v === undefined ? '' : String(v);
     return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -135,6 +145,7 @@ export function leadsCsv(leads: WithId<Lead>[], employeeNames: Map<string, strin
       l.name,
       l.phone,
       l.status,
+      l.industry ? INDUSTRY_META[l.industry].label : '',
       l.assignedEmployeeId ? employeeNames.get(l.assignedEmployeeId) ?? '' : '',
       fmt(l.postponedUntil),
       l.responseSeconds != null ? Math.round(l.responseSeconds / 60) : '',

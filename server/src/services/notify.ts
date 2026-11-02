@@ -73,7 +73,9 @@ export async function notifyReminder(emp: WithId<Employee>, lead: WithId<Lead>) 
       ? lead.postponedUntil
         ? `⏰ Eslatma: bugun qo'ng'iroq qilish kerak`
         : `⏰ Eslatma: keyinga qoldirilgan lid`
-      : `⏰ Qayta qo'ng'iroq qiling (avval ko'tarmagan)`;
+      : lead.status === 'thinking'
+        ? `⏰ Narxni o'ylab ko'rdimi? Qayta bog'laning`
+        : `⏰ Qayta qo'ng'iroq qiling (avval ko'tarmagan)`;
   return toEmployee(emp, leadCard(lead, title), { keyboard: leadKeyboard(lead) });
 }
 

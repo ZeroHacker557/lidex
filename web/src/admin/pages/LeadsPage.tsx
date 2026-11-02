@@ -2,8 +2,9 @@ import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-q
 import { Download, Flag, Plus, Repeat2, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { LEAD_STATUSES, STATUS_META } from '@shared/statuses';
+import { INDUSTRIES, INDUSTRY_META, LEAD_STATUSES, STATUS_META } from '@shared/statuses';
 import { duration, formatPhone, smartDate, tashkentDateKey } from '../../shared/format';
+import { IndustryTag } from '../../shared/IndustryPicker';
 import type { Lead, Paged } from '../../shared/types';
 import { Button, Empty, ErrorBox, Sheet, Spinner, StatusBadge, errorText, useToast } from '../../shared/ui';
 import { api } from '../api';
@@ -23,6 +24,7 @@ export function LeadsPage() {
       groupId: params.get('groupId') ?? '',
       employeeId: params.get('employeeId') ?? '',
       status: params.get('status') ?? '',
+      industry: params.get('industry') ?? '',
       from: params.get('from') ?? '',
       to: params.get('to') ?? '',
       q: params.get('q') ?? '',
@@ -49,6 +51,7 @@ export function LeadsPage() {
     groupId: filters.groupId || undefined,
     employeeId: filters.employeeId || undefined,
     status: filters.status || undefined,
+    industry: filters.industry || undefined,
     from: filters.from ? new Date(`${filters.from}T00:00:00+05:00`).toISOString() : undefined,
     to: filters.to ? new Date(new Date(`${filters.to}T00:00:00+05:00`).getTime() + 86_400_000).toISOString() : undefined,
     q: filters.q || undefined,
@@ -89,7 +92,7 @@ export function LeadsPage() {
         }
       />
 
-      <div className="card mb-4 grid gap-3 p-4 shadow-card md:grid-cols-2 xl:grid-cols-6">
+      <div className="card mb-4 grid gap-3 p-4 shadow-card md:grid-cols-2 xl:grid-cols-7">
         <div className="relative xl:col-span-2">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Ism, telefon yoki #raqam" className="input h-10 pl-9 text-sm" />
@@ -120,11 +123,19 @@ export function LeadsPage() {
             </option>
           ))}
         </Select>
+        <Select value={filters.industry} onChange={(e) => set('industry', e.target.value)}>
+          <option value="">Barcha sohalar</option>
+          {INDUSTRIES.map((i) => (
+            <option key={i} value={i}>
+              {INDUSTRY_META[i].emoji} {INDUSTRY_META[i].label}
+            </option>
+          ))}
+        </Select>
         <label className="flex h-10 items-center gap-2 rounded-xl border border-line bg-surface px-3 text-sm">
           <input type="checkbox" checked={!!filters.flagged} onChange={(e) => set('flagged', e.target.checked ? '1' : '')} />
           <Flag className="h-4 w-4 text-danger" /> Belgilanganlar
         </label>
-        <div className="flex flex-wrap items-center gap-2 md:col-span-2 xl:col-span-6">
+        <div className="flex flex-wrap items-center gap-2 md:col-span-2 xl:col-span-7">
           <input type="date" value={filters.from} onChange={(e) => set('from', e.target.value)} className="input h-9 w-40 py-0 text-sm" />
           <span className="text-muted">—</span>
           <input type="date" value={filters.to} onChange={(e) => set('to', e.target.value)} className="input h-9 w-40 py-0 text-sm" />
@@ -191,6 +202,7 @@ export function LeadsPage() {
                   </Td>
                   <Td>
                     <StatusBadge status={l.status} size="sm" />
+                    {l.industry && <IndustryTag industry={l.industry} className="mt-1 text-[11.5px]" />}
                   </Td>
                   <Td>{l.assignedEmployeeId ? empName.get(l.assignedEmployeeId) ?? '…' : <span className="font-medium text-danger">Biriktirilmagan</span>}</Td>
                   <Td className="text-muted">{l.groupTitle}</Td>
@@ -205,7 +217,7 @@ export function LeadsPage() {
                     )}
                   </Td>
                   <Td className="whitespace-nowrap text-muted">
-                    {l.status === 'postponed' ? (l.postponedUntil ? smartDate(l.postponedUntil) : 'har N kunda') : l.status === 'no_answer' ? smartDate(l.nextReminderAt) : ''}
+                    {l.status === 'postponed' ? (l.postponedUntil ? smartDate(l.postponedUntil) : 'har N kunda') : l.status === 'no_answer' || l.status === 'thinking' ? smartDate(l.nextReminderAt) : ''}
                   </Td>
                 </tr>
               ))}

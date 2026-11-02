@@ -3,6 +3,7 @@
 //  2. SLA — yangi lidga belgilangan vaqtda javob berilmasa xodimni, 3 barobar kechiksa adminlarni ogohlantirish
 //  3. Ertalabki dayjest — xodimga bugungi rejalar, adminlarga kechagi hisobot
 
+import { OPEN_STATUSES, REMINDER_STATUSES } from '../../../shared/statuses.js';
 import { config } from '../config.js';
 import { COL, db, type Employee, type Group, type Lead, type WithId } from '../db/index.js';
 import { addDays, addHours, addMinutes, isQuietHours, localDateKey, localParts, shiftOutOfQuietHours, startOfLocalDay } from '../lib/time.js';
@@ -45,7 +46,7 @@ export async function processReminders(now = new Date()) {
 
   for (const lead of due) {
     const group = groups.get(lead.groupId);
-    if ((lead.status !== 'postponed' && lead.status !== 'no_answer') || !group) {
+    if (!REMINDER_STATUSES.includes(lead.status) || !group) {
       await db().update(COL.leads, lead.id, { nextReminderAt: null });
       continue;
     }
@@ -55,6 +56,9 @@ export async function processReminders(now = new Date()) {
     if (lead.status === 'postponed') {
       // Sana bilan: o'sha kuni eslatiladi, keyin ham ishlanmasa — har kuni; sanasiz: har N kunda
       next = lead.postponedUntil ? addDays(now, 1) : addDays(now, s.postponeIntervalDays);
+    } else if (lead.status === 'thinking') {
+      // O'ylab ko'radi: javob bo'lmasa — har N kunda qayta bog'lanish
+      next = addDays(now, s.postponeIntervalDays);
     } else {
       next = count >= 3 ? addDays(now, 1) : addHours(now, s.noAnswerRetryHours);
     }
@@ -149,7 +153,7 @@ export async function processDigest(now = new Date()) {
     const base = [['assignedEmployeeId', '==', emp.id]] as const;
     const [reminders, fresh] = await Promise.all([
       db().count(COL.leads, {
-        where: [...base, ['status', 'in', ['postponed', 'no_answer']], ['nextReminderAt', '<', endOfDay]],
+        where: [...base, ['status', 'in', REMINDER_STATUSES], ['nextReminderAt', '<', endOfDay]],
       }),
       db().count(COL.leads, { where: [...base, ['status', '==', 'new']] }),
     ]);
@@ -179,7 +183,7 @@ export async function processDigest(now = new Date()) {
     db().count(COL.leads, { where: [...range, ['status', '==', 'rejected']] }),
     db().count(COL.leads, { where: [...range, ['status', '==', 'cancelled']] }),
     db().count(COL.leads, { where: [...range, ['status', '==', 'fake']] }),
-    db().count(COL.leads, { where: [...range, ['status', 'in', ['new', 'no_answer', 'postponed']]] }),
+    db().count(COL.leads, { where: [...range, ['status', 'in', OPEN_STATUSES]] }),
   ]);
   if (!total) return;
   const conv = total > fake ? Math.round((success / (total - fake)) * 100) : 0; // soxta lidlar konversiyaga kirmaydi

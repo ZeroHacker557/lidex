@@ -1,4 +1,4 @@
-import type { ActorType, EventType, GroupSettings, LeadStatus } from '../../../shared/statuses.js';
+import type { ActorType, EventType, GroupSettings, Industry, LeadStatus } from '../../../shared/statuses.js';
 
 export type AdminRole = 'superadmin' | 'admin';
 
@@ -88,6 +88,8 @@ export interface Lead {
   telegramUsername: string | null;
   fields: LeadField[];
   status: LeadStatus;
+  /** Mijoz kompaniyasining sohasi (xodim/admin belgilaydi). Eski lidlarda bo'lmasligi mumkin */
+  industry?: Industry | null;
   postponedUntil: Date | null;
   nextReminderAt: Date | null;
   reminderCount: number;

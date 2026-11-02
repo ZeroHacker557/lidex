@@ -2,7 +2,7 @@
 import bcrypt from 'bcryptjs';
 import { Router, type Request } from 'express';
 import { z } from 'zod';
-import { DEFAULT_GROUP_SETTINGS, LEAD_STATUSES, OPEN_STATUSES } from '../../../../shared/statuses.js';
+import { DEFAULT_GROUP_SETTINGS, INDUSTRIES, LEAD_STATUSES, OPEN_STATUSES } from '../../../../shared/statuses.js';
 import { botInfo } from '../../bot/instance.js';
 import {
   COL,
@@ -32,6 +32,7 @@ import {
   ingestLead,
   reassignLead,
   setFlag,
+  setIndustry,
   toLeadDto,
 } from '../../services/leads.js';
 import { forceIngestInbox } from '../../services/inbox.js';
@@ -141,6 +142,7 @@ const leadsQuery = z.object({
   groupId: id.optional(),
   employeeId: id.optional(), // "none" — biriktirilmaganlar
   status: z.enum(['open', ...LEAD_STATUSES]).optional(),
+  industry: z.enum(INDUSTRIES).optional(),
   from: isoDate.optional(),
   to: isoDate.optional(),
   q: z.string().max(60).optional(),
@@ -156,6 +158,7 @@ function leadsWhere(req: Request, q: z.infer<typeof leadsQuery>): Filter[] {
   if (q.employeeId) where.push(['assignedEmployeeId', '==', q.employeeId === 'none' ? null : q.employeeId]);
   if (q.status === 'open') where.push(['status', 'in', OPEN_STATUSES]);
   else if (q.status) where.push(['status', '==', q.status]);
+  if (q.industry) where.push(['industry', '==', q.industry]);
   if (q.flagged) where.push(['flagged', '==', true]);
   if (q.duplicate) where.push(['isDuplicate', '==', true]);
   if (q.from) where.push(['createdAt', '>=', new Date(q.from)]);
@@ -234,6 +237,13 @@ adminRouter.post('/leads/:id/status', async (req, res) => {
     postponedUntil: body.postponedUntil ? new Date(body.postponedUntil) : null,
     note: body.note,
   });
+  res.json({ lead: toLeadDto(lead) });
+});
+
+adminRouter.put('/leads/:id/industry', async (req, res) => {
+  const { industry } = z.object({ industry: z.enum(INDUSTRIES).nullable() }).parse(req.body);
+  await getLeadScoped(req, req.params.id!);
+  const lead = await setIndustry(req.params.id!, adminActor(req), industry);
   res.json({ lead: toLeadDto(lead) });
 });
 

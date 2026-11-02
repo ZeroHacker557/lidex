@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
-import { Activity, AlarmClock, BarChart3, CircleDashed, Ghost, Layers, PieChart, Timer, TriangleAlert, TrendingUp, UserX, UsersRound } from 'lucide-react';
+import { Activity, AlarmClock, BarChart3, Building2, CircleDashed, Ghost, Hourglass, Layers, PieChart, Timer, TriangleAlert, TrendingUp, UserX, UsersRound } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { EVENT_LABELS, STATUS_META, type LeadStatus } from '@shared/statuses';
+import { EVENT_LABELS, INDUSTRIES, INDUSTRY_META, STATUS_META, type Industry, type LeadStatus } from '@shared/statuses';
 import { duration, startOfTashkentDay, timeAgo } from '../../shared/format';
 import { ease } from '../../shared/motion';
 import type { EmployeeStatsRow, LeadEvent } from '../../shared/types';
@@ -18,6 +18,7 @@ import { useAdmin, useGroups } from '../context';
 interface Dashboard {
   total: number;
   byStatus: Record<LeadStatus, number>;
+  byIndustry?: Record<Industry, number>;
   conversion: number;
   avgResponseSeconds: number | null;
   openNow: number;
@@ -33,7 +34,7 @@ const PERIODS = [
   { value: 7, label: '7 kun' },
   { value: 30, label: '30 kun' },
 ];
-const COLS: LeadStatus[] = ['new', 'success', 'rejected', 'no_answer', 'postponed', 'cancelled', 'fake'];
+const COLS: LeadStatus[] = ['new', 'success', 'rejected', 'no_answer', 'thinking', 'postponed', 'cancelled', 'fake'];
 
 export function DashboardPage() {
   const { admin } = useAdmin();
@@ -82,21 +83,32 @@ export function DashboardPage() {
 
       {q.isError && <ErrorBox error={q.error} onRetry={() => q.refetch()} />}
       {!d && !q.isError && (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-7">
-          {Array.from({ length: 7 }, (_, i) => (
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          {Array.from({ length: 8 }, (_, i) => (
             <Skeleton key={i} className="h-[118px] rounded-2xl" />
           ))}
         </div>
       )}
       {d && (
         <div className={clsx('space-y-5 transition-opacity', q.isFetching && q.isPlaceholderData && 'opacity-60')}>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-7">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <KpiTile icon={Layers} label="Jami lid" value={d.total} sub={PERIODS.find((p) => p.value === days)?.label} delay={0} />
             <KpiTile icon={TrendingUp} tone="good" label="Konversiya" value={d.conversion} suffix="%" sub={`${d.byStatus.success} ta HA dedi · soxtalarsiz`} delay={0.04} />
             <KpiTile icon={Timer} tone="info" label="O'rtacha javob" value={duration(d.avgResponseSeconds)} sub="birinchi amalgacha" delay={0.08} />
-            <KpiTile icon={CircleDashed} tone="violet" label="Hozir ochiq" value={d.openNow} sub="yangi · ko'tarmadi · keyinga" delay={0.12} />
+            <KpiTile icon={CircleDashed} tone="violet" label="Hozir ochiq" value={d.openNow} sub="yangi · ko'tarmadi · o'ylayapti · keyinga" delay={0.12} />
             <KpiTile icon={AlarmClock} tone="warning" label="Muddati o'tgan" value={d.overdueReminders} sub="keyinga qoldirilganlar" delay={0.16} />
             <KpiTile icon={UserX} tone="danger" label="Biriktirilmagan" value={d.unassigned} sub={d.unassigned ? 'xodimga biriktiring' : 'hammasi taqsimlangan'} delay={0.2} />
+            {/* Narx so'raganlar — "deyarli mijoz", sotuv bo'limi e'tibori shu yerda */}
+            <button onClick={() => goLeads('thinking')} className="text-left" title="O'ylab ko'rayotganlarni ko'rish">
+              <KpiTile
+                icon={Hourglass}
+                tone="info"
+                label="O'ylab ko'radi"
+                value={d.byStatus.thinking ?? 0}
+                sub="narx so'radi · qayta bog'lanish kerak"
+                delay={0.22}
+              />
+            </button>
             {/* Ariza qoldirmagan (hazil uchun yozilgan) lidlar — reklama sifatini ko'rsatadi */}
             <button onClick={() => goLeads('fake')} className="text-left" title="Soxta lidlarni ko'rish">
               <KpiTile
@@ -118,6 +130,8 @@ export function DashboardPage() {
               <StatusBreakdown byStatus={d.byStatus} onPick={(s) => goLeads(s)} />
             </Card>
           </div>
+
+          {d.byIndustry && <IndustryCard byIndustry={d.byIndustry} total={d.total} onPick={(i) => navigate(`/leads?${new URLSearchParams({ industry: i, ...(groupId ? { groupId } : {}) })}`)} />}
 
           <Card
             title="Xodimlar samaradorligi"
@@ -253,5 +267,44 @@ export function DashboardPage() {
         </div>
       )}
     </div>
+  );
+}
+
+/** Sohalar bo'yicha lidlar (faqat soha belgilanganlar) */
+function IndustryCard({ byIndustry, total, onPick }: { byIndustry: Record<Industry, number>; total: number; onPick: (i: Industry) => void }) {
+  const rows = INDUSTRIES.map((i) => ({ i, n: byIndustry[i] ?? 0 }))
+    .filter((r) => r.n > 0)
+    .sort((a, b) => b.n - a.n);
+  const tagged = rows.reduce((a, r) => a + r.n, 0);
+  const max = Math.max(1, ...rows.map((r) => r.n));
+  return (
+    <Card title="Sohalar bo'yicha" icon={Building2} delay={0.18}>
+      {rows.length === 0 ? (
+        <p className="py-3 text-sm text-muted">Hali soha belgilanmagan. Xodimlar lid sahifasida mijoz kompaniyasining sohasini tanlaydi.</p>
+      ) : (
+        <>
+          <ul className="grid gap-x-8 gap-y-2.5 md:grid-cols-2">
+            {rows.map(({ i, n }) => (
+              <li key={i}>
+                <button onClick={() => onPick(i)} className="group w-full text-left">
+                  <span className="flex items-center justify-between text-[13.5px]">
+                    <span className="font-semibold group-hover:text-brand">
+                      {INDUSTRY_META[i].emoji} {INDUSTRY_META[i].label}
+                    </span>
+                    <span className="tabular font-bold">{n}</span>
+                  </span>
+                  <span className="mt-1 block h-2 overflow-hidden rounded-full bg-surface-2">
+                    <span className="block h-full rounded-full bg-brand-gradient" style={{ width: `${(n / max) * 100}%` }} />
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-[12px] text-muted">
+            Soha belgilangan: {tagged} / {total} lid
+          </p>
+        </>
+      )}
+    </Card>
   );
 }

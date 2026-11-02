@@ -7,7 +7,7 @@ import { addDays, addMinutes } from '../lib/time.js';
 import { processReminders, processSla } from '../scheduler/index.js';
 import { invalidateGroups, newGroup } from './groups.js';
 import { inboxId, processPendingInbox, receiveGroupMessage } from './inbox.js';
-import { bulkAssign, changeStatus, ingestLead, reassignLead } from './leads.js';
+import { bulkAssign, changeStatus, ingestLead, reassignLead, setIndustry } from './leads.js';
 
 setStore(new MemoryStore(null));
 
@@ -167,4 +167,26 @@ test("soxta lid: yakuniy status, konversiyaga kirmaydi", async () => {
   assert.equal(conversionRate({ fake: 5 }), 0);
   assert.ok(FINAL_STATUSES.includes('fake'));
   assert.ok(!OPEN_STATUSES.includes('fake'));
+});
+
+test("o'ylab ko'radi: ochiq status, ertasi kuni eslatma; soha belgilash", async () => {
+  const gid = await db().create(COL.groups, newGroup({ title: 'Narx', chatId: -1009, chatType: 'supergroup', status: 'active' }));
+  invalidateGroups();
+  const emp = await db().create(COL.employees, employee('Dilim', [gid], 9, new Date('2026-01-01')));
+  const group = (await db().get<Group>(COL.groups, gid))!;
+  const r = await ingestLead({ group, source: 'telegram', text: 'Ism: Oziq MChJ\nTel: 909999999', chatId: -1009, messageId: 1 });
+  const actor = { type: 'employee' as const, id: emp, name: 'Dilim' };
+
+  const before = Date.now();
+  const lead = await changeStatus(r!.lead.id, actor, { status: 'thinking' });
+  assert.equal(lead.status, 'thinking');
+  assert.ok(OPEN_STATUSES.includes('thinking'));
+  const hours = (lead.nextReminderAt!.getTime() - before) / 3_600_000;
+  assert.ok(hours >= 23, `eslatma kamida 1 kundan keyin bo'lishi kerak (${hours} soat)`);
+
+  const tagged = await setIndustry(r!.lead.id, actor, 'food');
+  assert.equal(tagged.industry, 'food');
+  const found = await db().query<Lead>(COL.leads, { where: [['industry', '==', 'food']] });
+  assert.equal(found.length, 1);
+  assert.equal((await setIndustry(r!.lead.id, actor, null)).industry, null);
 });

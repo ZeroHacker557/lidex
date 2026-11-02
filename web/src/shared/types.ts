@@ -1,4 +1,4 @@
-import type { ActorType, EventType, GroupSettings, LeadStatus } from '@shared/statuses';
+import type { ActorType, EventType, GroupSettings, Industry, LeadStatus } from '@shared/statuses';
 
 export interface LeadField {
   key: string;
@@ -20,6 +20,7 @@ export interface Lead {
   telegramUsername: string | null;
   fields: LeadField[];
   status: LeadStatus;
+  industry?: Industry | null;
   postponedUntil: string | null;
   nextReminderAt: string | null;
   reminderCount: number;

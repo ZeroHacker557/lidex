@@ -1,4 +1,4 @@
-import { OPEN_STATUSES, STATUS_META, type LeadStatus } from '../../../shared/statuses.js';
+import { INDUSTRY_META, OPEN_STATUSES, STATUS_META, THINKING_FIRST_REMINDER_DAYS, type Industry, type LeadStatus } from '../../../shared/statuses.js';
 import { config } from '../config.js';
 import { COL, db, type Employee, type Filter, type Group, type Lead, type LeadField, type LeadSource, type WithId } from '../db/index.js';
 import { badRequest, forbidden, notFound } from '../lib/errors.js';
@@ -133,6 +133,7 @@ export async function ingestLead(input: IngestInput): Promise<IngestResult | nul
       telegramUsername: input.telegramUsername ?? parsed.telegramUsername,
       fields,
       status: 'new',
+      industry: null,
       postponedUntil: null,
       nextReminderAt: null,
       reminderCount: 0,
@@ -220,6 +221,8 @@ export function computeReminder(status: LeadStatus, postponedUntil: Date | null,
     return shiftOutOfQuietHours(addDays(now, group.settings.postponeIntervalDays));
   }
   if (status === 'no_answer') return shiftOutOfQuietHours(addHours(now, group.settings.noAnswerRetryHours));
+  // Narx yuborildi, o'ylab ko'radi — ertasi kuni qayta bog'lanish
+  if (status === 'thinking') return shiftOutOfQuietHours(addDays(now, THINKING_FIRST_REMINDER_DAYS));
   return null;
 }
 
@@ -288,6 +291,24 @@ export async function addNote(leadId: string, actor: Actor, text: string): Promi
   await db().update(COL.leads, lead.id, { lastNote: clean, updatedAt: now });
   const updated = { ...lead, lastNote: clean, updatedAt: now };
   await logEvent(updated, actor, 'note', { text: clean });
+  const dto = toLeadDto(updated);
+  emitToEmployee(updated.assignedEmployeeId, 'lead:updated', dto);
+  emitToAdmins(updated.groupId, 'lead:updated', dto);
+  return updated;
+}
+
+/** Mijoz kompaniyasining sohasini belgilash (null — olib tashlash) */
+export async function setIndustry(leadId: string, actor: Actor, industry: Industry | null): Promise<WithId<Lead>> {
+  const lead = await getLeadOr404(leadId);
+  if (actor.type === 'employee' && lead.assignedEmployeeId !== actor.id) throw forbidden('Bu lid sizga biriktirilmagan');
+  if ((lead.industry ?? null) === industry) return lead;
+  const now = new Date();
+  await db().update(COL.leads, lead.id, { industry, updatedAt: now });
+  const updated = { ...lead, industry, updatedAt: now };
+  await logEvent(updated, actor, 'industry_changed', {
+    text: industry ? `${INDUSTRY_META[industry].emoji} ${INDUSTRY_META[industry].label}` : 'Olib tashlandi',
+    meta: { from: lead.industry ?? null, to: industry },
+  });
   const dto = toLeadDto(updated);
   emitToEmployee(updated.assignedEmployeeId, 'lead:updated', dto);
   emitToAdmins(updated.groupId, 'lead:updated', dto);

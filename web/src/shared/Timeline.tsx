@@ -1,5 +1,6 @@
 import {
   BellRing,
+  Building2,
   Eye,
   Flag,
   Inbox,
@@ -28,6 +29,7 @@ const ICONS: Partial<Record<LeadEvent['type'], [LucideIcon, string]>> = {
   flagged: [Flag, '#dc2626'],
   unflagged: [Flag, '#64748b'],
   viewed: [Eye, '#64748b'],
+  industry_changed: [Building2, '#0ea5e9'],
 };
 
 export function Timeline({ events, showActor = true }: { events: LeadEvent[]; showActor?: boolean }) {
